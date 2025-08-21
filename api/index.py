@@ -1,10 +1,8 @@
-# Arquivo para Vercel - aplicação FastAPI completa
-from fastapi import FastAPI, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
+# Arquivo para Vercel - aplicação FastAPI completa e limpa
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from typing import List, Optional
 import os
-import stripe
 from dotenv import load_dotenv
 
 # Carrega variáveis do ambiente
@@ -31,32 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuração do Stripe
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-
 # Schemas Pydantic inline para evitar importações
-class FaturaBase(BaseModel):
-    nome_cliente: str
-    documento_cliente: str
-    email_cliente: str
-    numero_instalacao: str
-    valor_total: float
-    mes_referencia: str
-    data_vencimento: str
-    url_pdf: Optional[str] = None
-
-class FaturaCreate(FaturaBase):
-    pass
-
-class Fatura(FaturaBase):
-    id: int
-    ja_pago: bool
-    data_criacao: str
-    data_ultima_atualizacao: str
-
-    class Config:
-        from_attributes = True
-
 class FaturaSchema(BaseModel):
     id: int
     nome_cliente: Optional[str] = None
@@ -103,8 +76,8 @@ def health_check():
         "timestamp": "2024-01-01T00:00:00Z",
         "services": {
             "database": "ok",
-            "stripe": "ok" if os.getenv("STRIPE_SECRET_KEY") else "not_configured",
-            "email": "ok" if os.getenv("EMAIL_USER") else "not_configured"
+            "stripe": "not_configured",
+            "email": "not_configured"
         }
     }
 
