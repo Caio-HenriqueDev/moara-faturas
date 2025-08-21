@@ -54,11 +54,8 @@ class VercelSettings:
         """Retorna configuração específica do banco para Vercel"""
         return {
             "type": "postgresql",
-            "pool_class": "NullPool",
-            "connect_args": {
-                "connect_timeout": 10,
-                "application_name": "moara_faturas"
-            }
+            "pool_class": "NullPool"
+            # NullPool não suporta connect_args complexos
         }
     
     @classmethod

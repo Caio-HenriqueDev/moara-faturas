@@ -7,6 +7,7 @@ import imaplib
 import email
 import os
 from email.header import decode_header
+from email.message import Message
 from hashlib import md5
 from typing import List, Dict, Any, Optional
 
@@ -77,7 +78,7 @@ def salvar_pdf(conteudo: bytes, hash_pdf: str) -> Optional[str]:
         print(f"❌ Erro ao salvar PDF: {e}")
         return None
 
-def processar_anexo_pdf(part: email.message.Message, nome_anexo: str) -> Optional[Dict[str, Any]]:
+def processar_anexo_pdf(part: Message, nome_anexo: str) -> Optional[Dict[str, Any]]:
     """
     Processa um anexo PDF individual.
     
@@ -103,100 +104,163 @@ def processar_anexo_pdf(part: email.message.Message, nome_anexo: str) -> Optiona
         # Gera hash para verificar se é inédito
         hash_pdf = gerar_hash(conteudo)
         
-        # Verifica se o PDF já foi processado
-        path_pdf = os.path.join(settings.PDF_STORAGE_PATH, f"{hash_pdf}.pdf")
-        if os.path.exists(path_pdf):
-            print(f"📄 PDF já processado: {nome}")
-            return None
-
         # Salva o PDF
-        path_salvo = salvar_pdf(conteudo, hash_pdf)
-        if not path_salvo:
+        path_pdf = salvar_pdf(conteudo, hash_pdf)
+        if not path_pdf:
             return None
 
-        # Extrai dados do PDF
-        try:
-            from .pdf_parser import extrair_dados_fatura_pdf
-        except ImportError:
-            from pdf_parser import extrair_dados_fatura_pdf
-            
-        dados_extraidos = extrair_dados_fatura_pdf(path_salvo)
+        # Extrai dados da fatura
+        from .pdf_parser import extrair_dados_fatura_pdf
+        dados_fatura = extrair_dados_fatura_pdf(path_pdf)
         
-        if dados_extraidos:
-            dados_extraidos['url_pdf'] = path_salvo
-            print(f"✅ PDF processado com sucesso: {nome}")
-            return dados_extraidos
+        if dados_fatura:
+            dados_fatura["url_pdf"] = path_pdf
+            print(f"✅ Dados extraídos da fatura: {nome}")
+            return dados_fatura
         else:
-            print(f"⚠️ Não foi possível extrair dados do PDF: {nome}")
+            print(f"⚠️ Não foi possível extrair dados da fatura: {nome}")
             return None
-
+            
     except Exception as e:
-        print(f"❌ Erro ao processar anexo {nome_anexo}: {e}")
+        print(f"❌ Erro ao processar anexo PDF: {e}")
         return None
 
 def buscar_e_processar_emails() -> List[Dict[str, Any]]:
     """
-    Busca e-mails com anexos PDF, salva os inéditos e extrai os dados.
+    Busca emails com anexos PDF e processa faturas automaticamente.
     
     Returns:
-        Lista de dicionários com os dados de cada fatura processada
+        Lista de faturas processadas
     """
-    # Verifica se as credenciais estão configuradas
-    if not settings.EMAIL_USER or not settings.EMAIL_PASS:
-        print("❌ Credenciais de email não configuradas")
-        return []
+    faturas_processadas = []
     
-    # Conecta ao email
-    mail = conectar_email()
-    if not mail:
-        return []
-
     try:
-        print("🔍 Buscando emails...")
+        # Conecta ao email
+        mail = conectar_email()
+        if not mail:
+            return faturas_processadas
         
-        # Busca todos os emails
-        status, mensagens = mail.search(None, 'ALL')
-        if status != 'OK':
+        # Busca emails não lidos
+        status, messages = mail.search(None, "UNSEEN")
+        if status != "OK":
             print("❌ Erro ao buscar emails")
-            return []
-            
-        email_ids = mensagens[0].split()
-        dados_faturas = []
+            return faturas_processadas
         
-        # Processa os últimos 10 emails para evitar sobrecarga
-        emails_para_processar = reversed(email_ids[-10:])
+        email_ids = messages[0].split()
+        print(f"📧 Encontrados {len(email_ids)} emails não lidos")
         
-        for eid in emails_para_processar:
+        for email_id in email_ids:
             try:
-                # Busca o email completo
-                status, msg_data = mail.fetch(eid, "(RFC822)")
-                if status != 'OK':
+                # Busca o email específico
+                status, msg_data = mail.fetch(email_id, "(RFC822)")
+                if status != "OK":
                     continue
-                    
-                msg = email.message_from_bytes(msg_data[0][1])
                 
-                # Processa anexos
-                for part in msg.walk():
-                    if part.get_content_type() == "application/pdf":
-                        nome_anexo = part.get_filename()
-                        if nome_anexo:
-                            dados_fatura = processar_anexo_pdf(part, nome_anexo)
+                # Parse do email
+                raw_email = msg_data[0][1]
+                msg = email.message_from_bytes(raw_email)
+                
+                # Verifica se tem anexos
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        if part.get_content_maintype() == "multipart":
+                            continue
+                        if part.get("Content-Disposition") is None:
+                            continue
+                        
+                        # Verifica se é PDF
+                        filename = part.get_filename()
+                        if filename and filename.lower().endswith(".pdf"):
+                            print(f"📎 Processando anexo PDF: {filename}")
+                            
+                            # Processa o anexo
+                            dados_fatura = processar_anexo_pdf(part, filename)
                             if dados_fatura:
-                                dados_faturas.append(dados_fatura)
+                                faturas_processadas.append(dados_fatura)
+                
+                # Marca como lido
+                mail.store(email_id, "+FLAGS", "\\Seen")
                 
             except Exception as e:
-                print(f"⚠️ Erro ao processar email {eid}: {e}")
+                print(f"❌ Erro ao processar email {email_id}: {e}")
                 continue
-
-        print(f"📊 Total de faturas processadas: {len(dados_faturas)}")
-        return dados_faturas
-
+        
+        print(f"✅ Processamento concluído: {len(faturas_processadas)} faturas extraídas")
+        
     except Exception as e:
-        print(f"❌ Erro ao processar emails: {e}")
-        return []
+        print(f"❌ Erro geral no processamento de emails: {e}")
+    
     finally:
         try:
-            mail.logout()
-            print("🔒 Conexão com email encerrada")
+            if 'mail' in locals():
+                mail.close()
+                mail.logout()
         except:
             pass
+    
+    return faturas_processadas
+
+def processar_email_especifico(email_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Processa um email específico por ID.
+    
+    Args:
+        email_id: ID do email a ser processado
+        
+    Returns:
+        Dados da fatura processada ou None se falhar
+    """
+    try:
+        # Conecta ao email
+        mail = conectar_email()
+        if not mail:
+            return None
+        
+        # Busca o email específico
+        status, msg_data = mail.fetch(email_id, "(RFC822)")
+        if status != "OK":
+            print(f"❌ Erro ao buscar email {email_id}")
+            return None
+        
+        # Parse do email
+        raw_email = msg_data[0][1]
+        msg = email.message_from_bytes(raw_email)
+        
+        # Verifica se tem anexos PDF
+        if msg.is_multipart():
+            for part in msg.walk():
+                if part.get_content_maintype() == "multipart":
+                    continue
+                if part.get("Content-Disposition") is None:
+                    continue
+                
+                # Verifica se é PDF
+                filename = part.get_filename()
+                if filename and filename.lower().endswith(".pdf"):
+                    print(f"📎 Processando anexo PDF: {filename}")
+                    
+                    # Processa o anexo
+                    dados_fatura = processar_anexo_pdf(part, filename)
+                    if dados_fatura:
+                        return dados_fatura
+        
+        print(f"⚠️ Email {email_id} não contém anexos PDF válidos")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erro ao processar email {email_id}: {e}")
+        return None
+    
+    finally:
+        try:
+            if 'mail' in locals():
+                mail.close()
+                mail.logout()
+        except:
+            pass
+
+if __name__ == "__main__":
+    # Teste da funcionalidade
+    print("🧪 Testando automação de email...")
+    faturas = buscar_e_processar_emails()
+    print(f"📊 Total de faturas processadas: {len(faturas)}")

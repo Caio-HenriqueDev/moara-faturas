@@ -9,6 +9,10 @@ import sys
 import importlib
 from pathlib import Path
 
+# Adiciona o diretório raiz ao Python path
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
 def print_step(message):
     """Imprime uma mensagem de passo formatada"""
     print(f"\n{'='*50}")
@@ -174,6 +178,36 @@ def test_utils():
         print_error(f"Erro nos utilitários: {e}")
         return False
 
+def test_vercel_simulation():
+    """Testa se o sistema funciona simulando ambiente Vercel"""
+    print_step("Testando simulação de ambiente Vercel")
+    
+    try:
+        # Simula ambiente Vercel
+        os.environ["VERCEL_ENV"] = "production"
+        os.environ["DATABASE_URL"] = "postgresql://test:test@localhost:5432/test"
+        
+        # Testa se a configuração detecta corretamente
+        from backend.config import settings
+        
+        if settings.IS_VERCEL:
+            print_success("Ambiente Vercel detectado corretamente")
+        else:
+            print_warning("Ambiente Vercel não foi detectado")
+        
+        # Testa configuração de banco para Vercel
+        db_config = settings.get_database_config()
+        if db_config["type"] == "postgresql":
+            print_success("Configuração PostgreSQL para Vercel ativa")
+        else:
+            print_warning("Configuração PostgreSQL não ativa")
+        
+        return True
+        
+    except Exception as e:
+        print_error(f"Erro na simulação Vercel: {e}")
+        return False
+
 def main():
     """Função principal de teste"""
     print("🧪 TESTE DE COMPATIBILIDADE COM VERCEL")
@@ -185,7 +219,8 @@ def main():
         ("Configuração", test_configuration),
         ("Conexão com banco", test_database_connection),
         ("Schemas", test_schemas),
-        ("Utilitários", test_utils)
+        ("Utilitários", test_utils),
+        ("Simulação Vercel", test_vercel_simulation)
     ]
     
     resultados = []

@@ -40,8 +40,8 @@ def create_database_engine():
             engine = create_engine(
                 database_url,
                 poolclass=NullPool,
-                echo=settings.DEBUG,
-                **config["connect_args"]
+                echo=settings.DEBUG
+                # NullPool não suporta connect_args
             )
         else:
             engine = create_engine(
@@ -52,14 +52,14 @@ def create_database_engine():
                 pool_pre_ping=config.get("pool_pre_ping", True),
                 pool_recycle=config.get("pool_recycle", 3600),
                 echo=settings.DEBUG,
-                **config["connect_args"]
+                **config.get("connect_args", {})
             )
     else:
         # SQLite (desenvolvimento local)
         engine = create_engine(
             database_url,
             echo=settings.DEBUG,
-            **config["connect_args"]
+            **config.get("connect_args", {})
         )
     
     return engine
