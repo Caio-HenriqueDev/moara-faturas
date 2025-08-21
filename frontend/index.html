@@ -90,6 +90,15 @@
                     <input type="text" placeholder="Buscar...">
                 </div>
                 
+                <!-- Seletor de Ambiente -->
+                <div class="environment-selector">
+                    <select id="env-selector" onchange="switchEnvironment(this.value)">
+                        <option value="local">🏠 Local</option>
+                        <option value="vercel">☁️ Vercel</option>
+                        <option value="vercel2">☁️ Vercel 2</option>
+                    </select>
+                </div>
+                
                 <div class="user-menu">
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
@@ -441,6 +450,8 @@
 
     <!-- Stripe para pagamentos -->
     <script src="https://js.stripe.com/v3/"></script>
+    <!-- Configuração da aplicação -->
+    <script src="./config.js"></script>
     <script src="./app.js"></script>
     
     <!-- PWA Service Worker Registration -->
