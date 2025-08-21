@@ -23,22 +23,25 @@ MANIFEST
 
 # Virtual Environment
 venv/
-.venv/
 env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables
 .env
+.env.local
+.env.production
+.env.staging
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.backup
+# Logs
+*.log
+logs/
 
 # IDE
 .vscode/
@@ -56,30 +59,66 @@ env/
 ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-logs/
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+/temp/
 
-# Node modules (se houver)
+# PDF files (sample data)
+data/sample_emails/*.pdf
+
+# Node modules (if any)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs
-dist/
-build/
-.next/
-out/
+# Vercel
+.vercel
 
-# Temporary files
-*.tmp
-*.temp
-.cache/
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
 
-# PDFs de teste
-backend/data/sample_emails/*.pdf
+# Jupyter Notebook
+.ipynb_checkpoints
 
-# Arquivos de configuração local
-*.local
+# pyenv
+.python-version
 
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

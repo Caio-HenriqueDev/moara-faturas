@@ -1,0 +1,27 @@
+# Variáveis de ambiente para Vercel
+# Configure estas variáveis no painel da Vercel
+
+# Configurações de Email (Gmail)
+EMAIL_USER=seu_email@gmail.com
+EMAIL_PASS=sua_senha_de_app_gmail
+EMAIL_HOST=imap.gmail.com
+EMAIL_PORT=993
+
+# Configurações do Stripe
+STRIPE_SECRET_KEY=sk_live_sua_chave_secreta_producao
+STRIPE_PUBLIC_KEY=pk_live_sua_chave_publica_producao
+STRIPE_WEBHOOK_SECRET=whsec_seu_webhook_secret_producao
+
+# URLs do Frontend (Vercel)
+FRONTEND_SUCCESS_URL=https://moara.vercel.app/success
+FRONTEND_CANCEL_URL=https://moara.vercel.app/cancel
+
+# Configurações de Banco de Dados (PostgreSQL na Vercel)
+DATABASE_URL=postgresql://user:password@host:port/database
+
+# Configurações de Ambiente
+DEBUG=false
+VERCEL_ENV=production
+
+# Configurações de Segurança
+SECRET_KEY=sua_chave_secreta_muito_segura_para_producao 

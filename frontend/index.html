@@ -23,6 +23,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
     <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
     
+    <!-- Estilos -->
     <link rel="stylesheet" href="./style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -87,453 +88,191 @@
             <div class="header-right">
                 <div class="search-bar">
                     <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Buscar...">
+                    <input type="text" placeholder="Buscar faturas, clientes...">
                 </div>
                 
                 <!-- Seletor de Ambiente -->
                 <div class="environment-selector">
-                    <select id="env-selector" onchange="switchEnvironment(this.value)">
+                    <select id="env-selector">
                         <option value="local">🏠 Local</option>
                         <option value="vercel">☁️ Vercel</option>
                         <option value="vercel2">☁️ Vercel 2</option>
                     </select>
                 </div>
-                
-                <div class="user-menu">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <span class="user-name">Admin</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
             </div>
         </header>
 
-        <!-- Dashboard Content -->
-        <div class="dashboard-content" id="dashboard-content">
-            <!-- Stats Cards -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Total de Clientes</h3>
-                        <p class="stat-number" id="total-clientes">0</p>
-                        <span class="stat-change positive">+0% este mês</span>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Faturas Pendentes</h3>
-                        <p class="stat-number" id="faturas-pendentes">0</p>
-                        <span class="stat-change negative">0 pendentes</span>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Receita Total</h3>
-                        <p class="stat-number" id="receita-total">R$ 0,00</p>
-                        <span class="stat-change positive">+0% este mês</span>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Pagamentos Confirmados</h3>
-                        <p class="stat-number" id="pagamentos-confirmados">0</p>
-                        <span class="stat-change positive">100% em dia</span>
-                    </div>
-                </div>
-            </div>
+        <!-- Notification Container -->
+        <div id="notification-container"></div>
 
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button class="btn btn-primary" id="processar-emails">
-                    <i class="fas fa-envelope"></i>
-                    Processar Novos E-mails
-                </button>
-                
-                <button class="btn btn-secondary" id="nova-fatura">
-                    <i class="fas fa-plus"></i>
-                    Nova Fatura
-                </button>
-                
-                <button class="btn btn-success" id="novo-cliente">
-                    <i class="fas fa-user-plus"></i>
-                    Novo Cliente
-                </button>
-            </div>
-
-            <!-- Main Content Area -->
-            <div class="content-area">
-                <!-- Faturas Section -->
-                <div class="content-section">
-                    <div class="section-header">
-                        <h2>Faturas Recentes</h2>
-                        <button class="btn btn-outline" id="ver-todas-faturas">
-                            Ver Todas
+        <!-- Content Sections -->
+        <div class="content-wrapper">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section">
+                <div class="section-header">
+                    <h2>Dashboard</h2>
+                    <div class="section-actions">
+                        <button id="btn-processar-emails" class="btn btn-primary">
+                            <i class="fas fa-envelope"></i>
+                            Processar Emails
+                        </button>
+                        <button id="btn-atualizar-dashboard" class="btn btn-secondary">
+                            <i class="fas fa-sync-alt"></i>
+                            Atualizar
                         </button>
                     </div>
-                    
-                    <div class="faturas-container" id="faturas-container">
-                        <div id="loading" class="loading-message">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            Carregando faturas...
-                        </div>
-                        <div id="no-faturas" class="no-data" style="display: none;">
-                            <i class="fas fa-inbox"></i>
-                            <h3>Nenhuma fatura encontrada</h3>
-                            <p>Clique em "Processar Novos E-mails" para buscar faturas automaticamente.</p>
-                        </div>
-                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Clientes Content (Hidden by default) -->
-        <div class="clientes-content" id="clientes-content" style="display: none;">
-            <div class="content-section">
-                <div class="section-header">
-                    <h2>Gestão de Clientes</h2>
-                    <button class="btn btn-primary" id="adicionar-cliente">
-                        <i class="fas fa-plus"></i>
-                        Adicionar Cliente
-                    </button>
+                <!-- Statistics Cards -->
+                <div id="stats-container" class="stats-grid">
+                    <!-- Stats serão renderizados dinamicamente -->
                 </div>
-                
-                <div class="clientes-grid" id="clientes-grid">
-                    <!-- Clientes serão carregados aqui -->
-                </div>
-            </div>
-        </div>
 
-        <!-- Faturas Content (Hidden by default) -->
-        <div class="faturas-content" id="faturas-content" style="display: none;">
-            <div class="content-section">
+                <!-- Charts Section -->
+                <div id="charts-container" class="charts-section">
+                    <!-- Charts serão renderizados dinamicamente -->
+                </div>
+
+                <!-- Recent Faturas -->
+                <div id="recent-faturas-container" class="recent-faturas">
+                    <!-- Faturas recentes serão renderizadas dinamicamente -->
+                </div>
+            </section>
+
+            <!-- Faturas Section -->
+            <section id="faturas" class="content-section" style="display: none;">
                 <div class="section-header">
                     <h2>Gestão de Faturas</h2>
-                    <div class="filters">
-                        <input type="text" id="search-filter" placeholder="Buscar por cliente ou instalação...">
-                        <select id="status-filter">
-                            <option value="">Todos os Status</option>
-                            <option value="pendente">Pendentes</option>
-                            <option value="pago">Pagas</option>
-                        </select>
-                        <input type="date" id="date-filter">
-                        <button class="btn btn-primary" id="limpar-filtros">
-                            <i class="fas fa-times"></i>
-                            Limpar
+                    <div class="section-actions">
+                        <button id="nova-fatura" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Nova Fatura
+                        </button>
+                        <button id="btn-processar-emails-faturas" class="btn btn-secondary">
+                            <i class="fas fa-envelope"></i>
+                            Processar Emails
                         </button>
                     </div>
                 </div>
-                
-                <div class="faturas-table-container">
-                    <table class="faturas-table" id="faturas-table">
-                        <thead>
-                            <tr>
-                                <th>Cliente</th>
-                                <th>Instalação</th>
-                                <th>Mês Ref.</th>
-                                <th>Vencimento</th>
-                                <th>Valor</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="faturas-table-body">
-                            <!-- Faturas serão carregadas aqui -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
-        <!-- Pagamentos Content (Hidden by default) -->
-        <div class="pagamentos-content" id="pagamentos-content" style="display: none;">
-            <div class="content-section">
-                <div class="section-header">
-                    <h2>Histórico de Pagamentos</h2>
-                </div>
-                
-                <div class="pagamentos-grid" id="pagamentos-grid">
-                    <!-- Pagamentos serão carregados aqui -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Relatórios Content (Hidden by default) -->
-        <div class="relatorios-content" id="relatorios-content" style="display: none;">
-            <div class="content-section">
-                <div class="section-header">
-                    <h2>Relatórios e Analytics</h2>
-                </div>
-                
-                <div class="relatorios-grid">
-                    <div class="relatorio-card">
-                        <h3>Relatório de Faturas</h3>
-                        <div class="relatorio-content">
-                            <canvas id="faturas-chart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="relatorio-card">
-                        <h3>Receita Mensal</h3>
-                        <div class="relatorio-content">
-                            <canvas id="receita-chart"></canvas>
-                        </div>
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label for="status-filter">Status:</label>
+                        <select id="status-filter" class="status-filter">
+                            <option value="todas">Todas</option>
+                            <option value="pendentes">Pendentes</option>
+                            <option value="pagas">Pagas</option>
+                        </select>
                     </div>
                 </div>
-            </div>
+
+                <!-- Faturas Container -->
+                <div id="faturas-container" class="faturas-grid">
+                    <!-- Faturas serão renderizadas dinamicamente -->
+                </div>
+            </section>
+
+            <!-- Outras seções serão adicionadas conforme necessário -->
         </div>
     </main>
 
+    <!-- Modals -->
+    
     <!-- Modal Nova Fatura -->
-    <div class="modal" id="modal-nova-fatura">
+    <div id="modal-nova-fatura" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Nova Fatura</h3>
-                <button class="modal-close" id="close-nova-fatura">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button id="close-nova-fatura" class="close-btn">&times;</button>
             </div>
             <form id="form-nova-fatura" class="modal-form">
                 <div class="form-group">
-                    <label for="nome-cliente">Nome do Cliente *</label>
-                    <input type="text" id="nome-cliente" name="nome_cliente" required>
+                    <label for="nome_cliente">Nome do Cliente</label>
+                    <input type="text" id="nome_cliente" name="nome_cliente" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="documento-cliente">CPF/CNPJ *</label>
-                    <input type="text" id="documento-cliente" name="documento_cliente" required>
+                    <label for="documento_cliente">CPF/CNPJ</label>
+                    <input type="text" id="documento_cliente" name="documento_cliente" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="email-cliente">Email</label>
-                    <input type="email" id="email-cliente" name="email_cliente">
+                    <label for="email_cliente">Email</label>
+                    <input type="email" id="email_cliente" name="email_cliente" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="numero-instalacao">Número de Instalação *</label>
-                    <input type="text" id="numero-instalacao" name="numero_instalacao" required>
+                    <label for="numero_instalacao">Número da Instalação</label>
+                    <input type="text" id="numero_instalacao" name="numero_instalacao" required>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="valor-total">Valor Total *</label>
-                        <input type="number" id="valor-total" name="valor_total" step="0.01" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="mes-referencia">Mês de Referência *</label>
-                        <input type="month" id="mes-referencia" name="mes_referencia" required>
-                    </div>
-                </div>
-                
                 <div class="form-group">
-                    <label for="data-vencimento">Data de Vencimento *</label>
-                    <input type="date" id="data-vencimento" name="data_vencimento" required>
+                    <label for="valor_total">Valor Total</label>
+                    <input type="number" id="valor_total" name="valor_total" step="0.01" required>
                 </div>
-                
+                <div class="form-group">
+                    <label for="mes_referencia">Mês de Referência</label>
+                    <input type="text" id="mes_referencia" name="mes_referencia" required>
+                </div>
+                <div class="form-group">
+                    <label for="data_vencimento">Data de Vencimento</label>
+                    <input type="text" id="data_vencimento" name="data_vencimento" required>
+                </div>
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelar-nova-fatura">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i>
-                        Salvar Fatura
-                    </button>
+                    <button type="submit" class="btn btn-primary">Criar Fatura</button>
+                    <button type="button" id="cancelar-nova-fatura" class="btn btn-secondary">Cancelar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Novo Cliente -->
-    <div class="modal" id="modal-novo-cliente">
+    <!-- Modal Editar Fatura -->
+    <div id="modal-editar-fatura" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Novo Cliente</h3>
-                <button class="modal-close" id="close-novo-cliente">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3>Editar Fatura</h3>
+                <button id="close-editar-fatura" class="close-btn">&times;</button>
             </div>
-            <form id="form-novo-cliente" class="modal-form">
+            <form id="form-editar-fatura" class="modal-form">
                 <div class="form-group">
-                    <label for="cliente-nome">Nome Completo *</label>
-                    <input type="text" id="cliente-nome" name="nome" required>
+                    <label for="edit-nome-cliente">Nome do Cliente</label>
+                    <input type="text" id="edit-nome-cliente" name="edit_nome_cliente" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="cliente-documento">CPF/CNPJ *</label>
-                    <input type="text" id="cliente-documento" name="documento" required>
+                    <label for="edit-documento-cliente">CPF/CNPJ</label>
+                    <input type="text" id="edit-documento-cliente" name="edit_documento_cliente" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="cliente-email">Email *</label>
-                    <input type="email" id="cliente-email" name="email" required>
+                    <label for="edit-email-cliente">Email</label>
+                    <input type="email" id="edit-email-cliente" name="edit_email_cliente" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="cliente-telefone">Telefone</label>
-                    <input type="tel" id="cliente-telefone" name="telefone">
+                    <label for="edit-numero-instalacao">Número da Instalação</label>
+                    <input type="text" id="edit-numero-instalacao" name="edit_numero_instalacao" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="cliente-endereco">Endereço</label>
-                    <textarea id="cliente-endereco" name="endereco" rows="3"></textarea>
+                    <label for="edit-valor-total">Valor Total</label>
+                    <input type="number" id="edit-valor-total" name="edit_valor_total" step="0.01" required>
                 </div>
-                
+                <div class="form-group">
+                    <label for="edit-mes-referencia">Mês de Referência</label>
+                    <input type="text" id="edit-mes-referencia" name="edit_mes_referencia" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-data-vencimento">Data de Vencimento</label>
+                    <input type="text" id="edit-data-vencimento" name="edit_data_vencimento" required>
+                </div>
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelar-novo-cliente">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i>
-                        Cadastrar Cliente
-                    </button>
+                    <button type="submit" class="btn btn-primary">Atualizar Fatura</button>
+                    <button type="button" id="cancelar-editar-fatura" class="btn btn-secondary">Cancelar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Detalhes da Fatura -->
-    <div class="modal" id="modal-detalhes-fatura">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Detalhes da Fatura</h3>
-                <button class="modal-close" id="close-detalhes-fatura">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="detalhes-fatura-content">
-                <!-- Conteúdo será preenchido dinamicamente -->
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-outline" id="fechar-detalhes">Fechar</button>
-                <button class="btn btn-primary" id="pagar-fatura-modal" style="display: none;">
-                    <i class="fas fa-credit-card"></i>
-                    Pagar Fatura
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Confirmação -->
-    <div class="modal" id="modal-confirmacao">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="confirmacao-titulo">Confirmação</h3>
-                <button class="modal-close" id="close-confirmacao">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p id="confirmacao-mensagem">Tem certeza que deseja continuar?</p>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="cancelar-acao">Cancelar</button>
-                <button class="btn btn-primary" id="confirmar-acao">Confirmar</button>
-            </div>
-        </div>
-    </div>
-    </main>
-
-    <!-- Notification Container -->
-    <div id="notification-container"></div>
-
-    <!-- Stripe para pagamentos -->
-    <script src="https://js.stripe.com/v3/"></script>
-    <!-- Configuração da aplicação -->
+    <!-- Scripts -->
+    <!-- Carrega módulos na ordem correta -->
     <script src="./config.js"></script>
+    <script src="./js/core.js"></script>
+    <script src="./js/faturas.js"></script>
+    <script src="./js/dashboard.js"></script>
     <script src="./app.js"></script>
-    
-    <!-- PWA Service Worker Registration -->
-    <script>
-        // Registrar Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((registration) => {
-                        console.log('Service Worker registrado com sucesso:', registration.scope);
-                        
-                        // Verificar se há atualizações
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Nova versão disponível
-                                    if (confirm('Nova versão disponível! Deseja atualizar?')) {
-                                        window.location.reload();
-                                    }
-                                }
-                            });
-                        });
-                    })
-                    .catch((error) => {
-                        console.log('Falha ao registrar Service Worker:', error);
-                    });
-            });
-        }
-        
-        // Instalar PWA
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            // Mostrar botão de instalação
-            showInstallButton();
-        });
-        
-        function showInstallButton() {
-            // Criar botão de instalação se não existir
-            if (!document.getElementById('install-pwa-btn')) {
-                const installBtn = document.createElement('button');
-                installBtn.id = 'install-pwa-btn';
-                installBtn.className = 'btn btn-primary install-pwa-btn';
-                installBtn.innerHTML = '<i class="fas fa-download"></i> Instalar App';
-                installBtn.style.cssText = `
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    z-index: 1000;
-                    padding: 12px 24px;
-                    border-radius: 25px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                    animation: slideIn 0.3s ease-out;
-                `;
-                
-                installBtn.addEventListener('click', () => {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('Usuário aceitou instalação');
-                        }
-                        deferredPrompt = null;
-                        installBtn.remove();
-                    });
-                });
-                
-                document.body.appendChild(installBtn);
-            }
-        }
-        
-        // CSS para animação do botão
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
 </body>
 </html>

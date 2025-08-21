@@ -1,0 +1,35 @@
+{
+  "name": "moara-faturas",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão de Faturas - Moara Energia (Python/FastAPI)",
+  "main": "backend/main.py",
+  "scripts": {
+    "dev": "cd backend && uvicorn main:app --reload --port 8000",
+    "start": "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000",
+    "build": "echo 'Build não necessário para Python/FastAPI'",
+    "vercel-build": "echo 'Build para Vercel concluído'",
+    "test": "cd backend && python -m pytest",
+    "lint": "cd backend && python -m flake8 .",
+    "format": "cd backend && python -m black ."
+  },
+  "keywords": [
+    "faturas",
+    "energia",
+    "fastapi",
+    "python",
+    "vercel",
+    "postgresql"
+  ],
+  "author": "Moara Energia",
+  "license": "MIT",
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caio-HenriqueDev/moara.git"
+  },
+  "private": true
+} 

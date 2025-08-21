@@ -1,0 +1,160 @@
+# VARIÁVEIS DE AMBIENTE PARA HOSTINGER
+# Sistema de Gestão de Faturas - Moara Energia
+# Copie este arquivo para .env e configure suas credenciais
+
+# ========================================
+# CONFIGURAÇÕES DE BANCO DE DADOS
+# ========================================
+# PostgreSQL da Hostinger (VPS/Cloud)
+DATABASE_URL=postgresql://moara_user:sua_senha_segura@localhost:5432/moara_faturas
+
+# ========================================
+# CONFIGURAÇÕES DO STRIPE
+# ========================================
+# Use chaves de PRODUÇÃO (não de teste)
+STRIPE_SECRET_KEY=sk_live_your_stripe_secret_key_here
+STRIPE_PUBLIC_KEY=pk_live_your_stripe_public_key_here
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+# ========================================
+# CONFIGURAÇÕES DE E-MAIL (GMAIL)
+# ========================================
+EMAIL_USER=seu_email@gmail.com
+EMAIL_PASS=sua_senha_de_app_gmail_16_caracteres
+EMAIL_HOST=imap.gmail.com
+EMAIL_PORT=993
+
+# ========================================
+# URLs DO FRONTEND
+# ========================================
+# Configure para seu domínio na Hostinger
+FRONTEND_SUCCESS_URL=https://seu-dominio.com/success
+FRONTEND_CANCEL_URL=https://seu-dominio.com/cancel
+
+# ========================================
+# CONFIGURAÇÕES DO AMBIENTE
+# ========================================
+ENVIRONMENT=production
+NODE_ENV=production
+
+# ========================================
+# CONFIGURAÇÕES DE SEGURANÇA
+# ========================================
+# Gere uma chave secreta forte para sessões
+SECRET_KEY=your_very_long_and_random_secret_key_here
+
+# ========================================
+# CONFIGURAÇÕES DE LOG
+# ========================================
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+LOG_FILE=logs/app.log
+
+# ========================================
+# CONFIGURAÇÕES DE PERFORMANCE
+# ========================================
+# Timeout para operações de banco (em segundos)
+DB_TIMEOUT=10
+# Número máximo de conexões simultâneas
+MAX_CONNECTIONS=5
+# Tamanho do pool de conexões
+POOL_SIZE=5
+# Overflow máximo do pool
+MAX_OVERFLOW=10
+
+# ========================================
+# CONFIGURAÇÕES DE MONITORAMENTO
+# ========================================
+# URL para health checks externos
+HEALTH_CHECK_URL=https://seu-dominio.com/health
+# Intervalo de verificação (em segundos)
+HEALTH_CHECK_INTERVAL=300
+# Habilitar métricas
+ENABLE_METRICS=true
+
+# ========================================
+# CONFIGURAÇÕES DE CACHE
+# ========================================
+# Habilitar cache Redis (opcional)
+REDIS_URL=redis://localhost:6379
+# TTL do cache (em segundos)
+CACHE_TTL=3600
+
+# ========================================
+# CONFIGURAÇÕES DE UPLOAD
+# ========================================
+# Diretório para uploads
+UPLOAD_DIR=uploads
+# Tamanho máximo de arquivo (em bytes)
+MAX_FILE_SIZE=10485760  # 10MB
+# Tipos de arquivo permitidos
+ALLOWED_FILE_TYPES=pdf,doc,docx
+
+# ========================================
+# CONFIGURAÇÕES DE NOTIFICAÇÃO
+# ========================================
+# Webhook para notificações (opcional)
+WEBHOOK_URL=https://seu-webhook.com/notify
+# Email para notificações de erro
+ADMIN_EMAIL=admin@seu-dominio.com
+
+# ========================================
+# CONFIGURAÇÕES DE BACKUP
+# ========================================
+# Habilitar backup automático
+ENABLE_BACKUP=true
+# Diretório de backup
+BACKUP_DIR=backups
+# Frequência de backup (em horas)
+BACKUP_INTERVAL=24
+
+# ========================================
+# CONFIGURAÇÕES DE LIMITE DE TAXA
+# ========================================
+# Limite de requests por minuto
+RATE_LIMIT_PER_MINUTE=100
+# Limite de requests por hora
+RATE_LIMIT_PER_HOUR=1000
+# Limite de requests por dia
+RATE_LIMIT_PER_DAY=10000
+
+# ========================================
+# CONFIGURAÇÕES DE CORS
+# ========================================
+# Origens permitidas para CORS
+CORS_ORIGINS=https://seu-dominio.com,https://www.seu-dominio.com
+# Credenciais permitidas
+CORS_ALLOW_CREDENTIALS=true
+# Métodos permitidos
+CORS_ALLOW_METHODS=GET,POST,PUT,DELETE,OPTIONS
+# Headers permitidos
+CORS_ALLOW_HEADERS=Content-Type,Authorization,X-Requested-With
+
+# ========================================
+# CONFIGURAÇÕES DE SSL
+# ========================================
+# Verificar certificados SSL
+VERIFY_SSL=true
+# Certificado SSL personalizado (opcional)
+SSL_CERT_FILE=/path/to/cert.pem
+SSL_KEY_FILE=/path/to/key.pem
+
+# ========================================
+# CONFIGURAÇÕES DE DEBUG
+# ========================================
+# Habilitar modo debug (apenas desenvolvimento)
+DEBUG=false
+# Mostrar erros detalhados
+SHOW_DETAILED_ERRORS=false
+# Log de queries SQL
+LOG_SQL_QUERIES=false
+
+# ========================================
+# CONFIGURAÇÕES DE TIMEZONE
+# ========================================
+# Fuso horário do servidor
+TIMEZONE=America/Sao_Paulo
+# Formato de data
+DATE_FORMAT=%Y-%m-%d
+# Formato de data e hora
+DATETIME_FORMAT=%Y-%m-%d %H:%M:%S 

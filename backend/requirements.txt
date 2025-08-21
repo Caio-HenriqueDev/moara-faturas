@@ -1,7 +1,25 @@
+# Dependências principais do Sistema de Gestão de Faturas
+# Backend FastAPI com suporte a múltiplos ambientes
+
+# Core Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+
+# Banco de Dados
 sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Processamento de PDFs
 PyPDF2==3.0.1
-python-dotenv==1.0.0
+
+# Integrações
 stripe==7.6.0
-psycopg2-binary==2.9.9 
+
+# Utilitários
+python-dotenv==1.0.0
+pydantic==2.5.0
+
+# Desenvolvimento (opcional)
+# pytest==7.4.3
+# black==23.11.0
+# flake8==6.1.0 

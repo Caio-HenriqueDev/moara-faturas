@@ -1,20 +1,28 @@
-# TEMPLATE PARA ARQUIVO .env
-# Copie este arquivo para .env e configure suas credenciais
+# Template de variáveis de ambiente para o Sistema de Gestão de Faturas
+# Copie este arquivo para .env e configure as variáveis
 
-# Configurações de E-mail (Gmail)
+# Configurações de Email (Gmail)
 EMAIL_USER=seu_email@gmail.com
 EMAIL_PASS=sua_senha_de_app_gmail
 EMAIL_HOST=imap.gmail.com
 EMAIL_PORT=993
 
 # Configurações do Stripe
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
-STRIPE_PUBLIC_KEY=pk_test_your_stripe_public_key_here
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+STRIPE_SECRET_KEY=sk_test_sua_chave_secreta_aqui
+STRIPE_PUBLIC_KEY=pk_test_sua_chave_publica_aqui
+STRIPE_WEBHOOK_SECRET=whsec_seu_webhook_secret_aqui
 
 # URLs do Frontend
 FRONTEND_SUCCESS_URL=http://localhost:3000/success
 FRONTEND_CANCEL_URL=http://localhost:3000/cancel
 
-# Configurações de Banco de Dados (para produção na Vercel)
+# Configurações de Banco de Dados (para produção)
 # DATABASE_URL=postgresql://user:password@host:port/database
+
+# Configurações de Ambiente
+DEBUG=false
+VERCEL_ENV=
+HOSTINGER_ENV=
+
+# Configurações de Segurança
+SECRET_KEY=sua_chave_secreta_muito_segura_aqui

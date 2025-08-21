@@ -1,160 +1,192 @@
-# Sistema de Gestão de Faturas - Moara Energia
+# 🏭 Sistema de Gestão de Faturas - Moara Energia
 
-## 📋 Descrição do Projeto
+Sistema completo para automação de processamento de faturas de energia elétrica, desenvolvido com FastAPI, React e integração com Stripe.
 
-Este projeto é um sistema completo para automação do processamento de faturas de energia. Ele busca PDFs de faturas em uma conta de e-mail, extrai os dados relevantes, armazena em um banco de dados e apresenta-os em uma interface web moderna. Os clientes podem então realizar o pagamento dessas faturas através de uma integração segura com o Stripe.
+## 🚀 **Deploy na Vercel**
 
-## 🚀 Tecnologias Utilizadas
-
-- **Backend**: Python (FastAPI, SQLAlchemy, PyPDF2, imaplib)
-- **Frontend**: HTML, CSS, JavaScript (PWA)
-- **Banco de Dados**: SQLite (desenvolvimento) / PostgreSQL (produção)
-- **Pagamentos**: Stripe
-- **Deploy**: Vercel
-
-## 🏗️ Estrutura do Projeto
-
-```
-buscador_de_faturas-main/
-├── backend/
-│   ├── utils/
-│   │   ├── bot_mail.py      # Automação de email
-│   │   └── pdf_parser.py    # Processamento de PDFs
-│   ├── data/                # Armazenamento de PDFs
-│   ├── main.py              # Aplicação FastAPI
-│   ├── models.py            # Modelos SQLAlchemy
-│   ├── crud.py              # Operações CRUD
-│   ├── schemas.py           # Schemas Pydantic
-│   ├── db.py                # Configuração SQLite
-│   ├── db_vercel.py         # Configuração PostgreSQL
-│   └── requirements.txt     # Dependências Python
-├── frontend/
-│   ├── index.html           # Dashboard principal
-│   ├── style.css            # Estilos
-│   ├── app.js               # Lógica da aplicação
-│   ├── manifest.json        # Configuração PWA
-│   └── sw.js                # Service Worker
-├── start_system.py          # Script de inicialização
-├── ESPECIFICACOES_TECNICAS.md # Documentação técnica
-└── readme.md                # Este arquivo
-```
-
-## ⚙️ Configuração do Ambiente
-
-### 1. **Clone o repositório:**
+### **Deploy Automático**
 ```bash
+# Clone o repositório
 git clone https://github.com/Caio-HenriqueDev/moara.git
 cd moara
+
+# Execute o script de deploy
+python3 deploy_vercel.py
 ```
 
-### 2. **Configure as variáveis de ambiente:**
-Crie um arquivo `.env` na raiz do projeto baseado no `env_template.txt`:
-
+### **Deploy Manual**
 ```bash
-# Email (Gmail)
+# Instale o Vercel CLI
+npm i -g vercel
+
+# Login na Vercel
+vercel login
+
+# Deploy
+vercel --prod
+```
+
+## 🔧 **Configuração de Variáveis de Ambiente**
+
+### **1. Banco de Dados (PostgreSQL)**
+```bash
+DATABASE_URL=postgresql://username:password@host:port/database
+```
+
+**Provedores Recomendados:**
+- 🟢 **Neon**: https://neon.tech (Gratuito)
+- 🟢 **Supabase**: https://supabase.com (Gratuito)
+- 🟢 **Railway**: https://railway.app
+
+### **2. Stripe (Pagamentos)**
+```bash
+STRIPE_SECRET_KEY=sk_test_... ou sk_live_...
+STRIPE_PUBLIC_KEY=pk_test_... ou pk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+### **3. Email (Gmail)**
+```bash
 EMAIL_USER=seu_email@gmail.com
 EMAIL_PASS=sua_senha_de_app_gmail
 EMAIL_HOST=imap.gmail.com
 EMAIL_PORT=993
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PUBLIC_KEY=pk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-# URLs Frontend
-FRONTEND_SUCCESS_URL=http://localhost:3000/success
-FRONTEND_CANCEL_URL=http://localhost:3000/cancel
 ```
 
-### 3. **Instale as dependências:**
+### **4. URLs do Frontend**
 ```bash
-cd backend
-pip install -r requirements.txt
+FRONTEND_SUCCESS_URL=https://seu-dominio.vercel.app/success
+FRONTEND_CANCEL_URL=https://seu-dominio.vercel.app/cancel
 ```
 
-## 🚀 Como Executar o Projeto
+## 🏃‍♂️ **Desenvolvimento Local**
 
-### **Método Simples (Recomendado):**
+### **1. Configuração do Ambiente**
 ```bash
-# Execute o script de inicialização automática
+# Crie um ambiente virtual
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# ou
+venv\Scripts\activate  # Windows
+
+# Instale as dependências
+pip install -r backend/requirements.txt
+
+# Configure as variáveis de ambiente
+cp .env.example .env
+# Edite o arquivo .env com suas credenciais
+```
+
+### **2. Inicialização do Sistema**
+```bash
+# Inicialização automática
 python3 start_system.py
+
+# Ou manualmente:
+# Terminal 1 - Backend
+cd backend && uvicorn main:app --reload --port 8000
+
+# Terminal 2 - Frontend
+cd frontend && python3 -m http.server 3000
 ```
 
-### **Método Manual:**
-1. **Backend:**
-   ```bash
-   cd backend
-   uvicorn main:app --reload --port 8000
-   ```
+## 📱 **Acessos**
 
-2. **Frontend:**
-   ```bash
-   cd frontend
-   python3 -m http.server 3000
-   ```
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
 
-### 📱 **Acessos:**
-- **Frontend:** http://localhost:3000
-- **Backend:** http://localhost:8000
-- **API Docs:** http://localhost:8000/docs
+## 🏗️ **Arquitetura**
 
-## 🔌 Endpoints da API
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │    │   Banco de      │
+│   (PWA)         │◄──►│   (FastAPI)     │◄──►│   Dados         │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Stripe        │    │   Gmail IMAP    │    │   Sistema de    │
+│   (Pagamentos)  │    │   (Emails)      │    │   Arquivos      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `GET` | `/` | Health check e informações do sistema |
-| `GET` | `/health` | Verificação de saúde dos serviços |
-| `POST` | `/processar_email/` | Processa emails e extrai faturas |
-| `GET` | `/faturas/` | Lista todas as faturas |
-| `POST` | `/create-checkout-session/{id}` | Cria sessão de pagamento Stripe |
-| `POST` | `/stripe-webhook/` | Webhook para eventos Stripe |
+## 🔒 **Segurança**
 
-## 🔒 Configuração do Gmail
+- ✅ CORS configurado
+- ✅ Headers de segurança
+- ✅ Validação de entrada com Pydantic
+- ✅ Autenticação de webhooks Stripe
+- ✅ Variáveis de ambiente criptografadas
 
-Para usar o sistema de automação de email:
+## 📊 **Funcionalidades**
 
-1. **Ative a verificação em 2 etapas** na sua conta Google
-2. **Gere uma senha de aplicativo** específica para este projeto
-3. **Ative o IMAP** nas configurações do Gmail
-4. **Configure as variáveis** `EMAIL_USER` e `EMAIL_PASS` no arquivo `.env`
+- 🔍 **Processamento Automático de Emails**
+- 📄 **Extração de Dados de PDFs**
+- 💳 **Integração com Stripe**
+- 📱 **Interface PWA Responsiva**
+- 📊 **Dashboard com Estatísticas**
+- 🔄 **Sincronização em Tempo Real**
 
-## 💳 Configuração do Stripe
+## 🧪 **Testes**
 
-1. **Crie uma conta** no [Stripe](https://stripe.com)
-2. **Obtenha as chaves** de API (teste e produção)
-3. **Configure webhooks** para receber eventos de pagamento
-4. **Configure as variáveis** `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET`
+### **Teste de Conectividade**
+```bash
+# Health Check
+curl http://localhost:8000/health
 
-## 🚀 Deploy na Vercel
+# Listar Faturas
+curl http://localhost:8000/faturas/
 
-O projeto está configurado para deploy automático na Vercel:
+# Documentação
+open http://localhost:8000/docs
+```
 
-1. **Conecte o repositório** GitHub à Vercel
-2. **Configure as variáveis de ambiente** no painel da Vercel
-3. **Deploy automático** a cada push para a branch main
+### **Teste de Produção**
+```bash
+# Build local
+npm run build
 
-## 📚 Documentação
+# Teste de produção
+npm start
+```
 
-- **Especificações Técnicas**: [ESPECIFICACOES_TECNICAS.md](ESPECIFICACOES_TECNICAS.md)
-- **API Docs**: Disponível em `/docs` quando o backend estiver rodando
+## 🐛 **Troubleshooting**
 
-## 🤝 Contribuição
+### **Erro 500 na Vercel**
+1. Verifique as variáveis de ambiente
+2. Confirme a DATABASE_URL
+3. Verifique os logs da Vercel
+4. Teste localmente primeiro
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+### **Problemas de Import**
+1. Verifique a estrutura de pastas
+2. Confirme os arquivos `__init__.py`
+3. Use imports relativos (`.`)
+
+## 📚 **Documentação**
+
+- **API Docs**: `/docs` (Swagger UI)
+- **ReDoc**: `/redoc`
+- **Especificações**: `ESPECIFICACOES_TECNICAS.md`
+- **Deploy Vercel**: `VERCEL_DEPLOY_COMPLETO.md`
+
+## 🤝 **Contribuição**
+
+1. Fork o projeto
+2. Crie uma branch para sua feature
+3. Commit suas mudanças
+4. Push para a branch
 5. Abra um Pull Request
 
-## 📄 Licença
+## 📄 **Licença**
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
-## 📞 Suporte
-
-Para suporte ou dúvidas, abra uma [issue](https://github.com/Caio-HenriqueDev/moara/issues) no GitHub.
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
 ---
 
-**Desenvolvido com ❤️ por Caio Henrique**
+**🚀 Projeto pronto para produção na Vercel!**
+
+Para suporte, abra uma issue no GitHub ou consulte a documentação da API.

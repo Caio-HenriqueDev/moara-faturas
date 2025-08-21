@@ -1,62 +1,229 @@
-// Configuração do Frontend - Sistema de Gestão de Faturas
-// Moara Energia
+/**
+ * Configuração do Frontend - Sistema de Gestão de Faturas
+ * Moara Energia - Gerencia configurações e ambiente da aplicação
+ */
 
+// Configuração base da aplicação
 const CONFIG = {
-    // URLs da API
-    API_BASE_URL: 'http://localhost:8000', // Desenvolvimento local
-    // API_BASE_URL: 'https://moara.vercel.app', // Produção Vercel
-    // API_BASE_URL: 'https://moaraenergiasolar.vercel.app', // Produção Vercel 2
-    
-    // Endpoints da API
-    ENDPOINTS: {
-        ROOT: '/',
-        HEALTH: '/health',
-        FATURAS: '/faturas/',
-        PROCESSAR_EMAIL: '/processar_email/',
-        CHECKOUT: '/create-checkout-session',
-        WEBHOOK: '/stripe-webhook/',
-        DOCS: '/docs'
-    },
-    
-    // Configurações do Stripe
-    STRIPE: {
-        PUBLIC_KEY: 'pk_test_your_stripe_public_key_here', // Configure sua chave pública
-        SUCCESS_URL: '/success',
-        CANCEL_URL: '/cancel'
-    },
-    
-    // Configurações da aplicação
+    // Informações da aplicação
     APP: {
         NAME: 'Moara Energia',
         VERSION: '2.0.0',
         DESCRIPTION: 'Sistema de Gestão de Faturas'
+    },
+    
+    // Configurações do Stripe
+    STRIPE: {
+        PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY || 'pk_test_your_stripe_public_key_here',
+        SUCCESS_URL: '/success',
+        CANCEL_URL: '/cancel'
+    },
+    
+    // Configurações de ambiente
+    ENVIRONMENTS: {
+        local: {
+            name: 'Local',
+            apiUrl: 'http://localhost:8000',
+            icon: '🏠'
+        },
+        vercel: {
+            name: 'Vercel',
+            apiUrl: 'https://moara.vercel.app',
+            icon: '☁️'
+        },
+        vercel2: {
+            name: 'Vercel 2',
+            apiUrl: 'https://moaraenergiasolar.vercel.app',
+            icon: '☁️'
+        }
     }
 };
 
-// Função para obter URL completa da API
-function getApiUrl(endpoint) {
-    return CONFIG.API_BASE_URL + endpoint;
+// Classe para gerenciar configurações
+class ConfigManager {
+    constructor() {
+        this.currentEnvironment = this.loadSavedEnvironment();
+        this.apiBaseUrl = this.getCurrentApiUrl();
+        this.endpoints = this.buildEndpoints();
+    }
+    
+    // Carrega ambiente salvo
+    loadSavedEnvironment() {
+        return localStorage.getItem('selected_environment') || 'local';
+    }
+    
+    // Obtém URL da API atual
+    getCurrentApiUrl() {
+        return CONFIG.ENVIRONMENTS[this.currentEnvironment]?.apiUrl || CONFIG.ENVIRONMENTS.local.apiUrl;
+    }
+    
+    // Constrói endpoints baseados na URL atual
+    buildEndpoints() {
+        return {
+            ROOT: '/',
+            HEALTH: '/health',
+            FATURAS: '/faturas/',
+            PROCESSAR_EMAIL: '/processar_email/',
+            CHECKOUT: '/create-checkout-session',
+            WEBHOOK: '/stripe-webhook/',
+            DOCS: '/docs'
+        };
+    }
+    
+    // Alterna entre ambientes
+    switchEnvironment(env) {
+        if (!CONFIG.ENVIRONMENTS[env]) {
+            console.warn(`Ambiente '${env}' não reconhecido`);
+            return false;
+        }
+        
+        this.currentEnvironment = env;
+        this.apiBaseUrl = this.getCurrentApiUrl();
+        
+        // Salva a preferência
+        localStorage.setItem('selected_environment', env);
+        
+        // Atualiza o seletor visual
+        this.updateEnvironmentSelector();
+        
+        console.log(`🌍 Ambiente alterado para: ${this.apiBaseUrl}`);
+        
+        // Dispara evento de mudança de ambiente
+        this.dispatchEnvironmentChangeEvent();
+        
+        return true;
+    }
+    
+    // Atualiza o seletor visual de ambiente
+    updateEnvironmentSelector() {
+        const envSelector = document.getElementById('env-selector');
+        if (envSelector) {
+            envSelector.value = this.currentEnvironment;
+        }
+    }
+    
+    // Dispara evento de mudança de ambiente
+    dispatchEnvironmentChangeEvent() {
+        const event = new CustomEvent('environmentChanged', {
+            detail: {
+                environment: this.currentEnvironment,
+                apiUrl: this.apiBaseUrl
+            }
+        });
+        document.dispatchEvent(event);
+    }
+    
+    // Obtém URL completa da API
+    getApiUrl(endpoint) {
+        return this.apiBaseUrl + endpoint;
+    }
+    
+    // Testa conectividade da API
+    async testApiConnection() {
+        try {
+            const response = await fetch(this.getApiUrl('/health'));
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ API conectada:', data);
+                return { success: true, data };
+            } else {
+                console.log('❌ API retornou erro:', response.status);
+                return { success: false, error: `HTTP ${response.status}` };
+            }
+        } catch (error) {
+            console.log('❌ Erro ao conectar com API:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    
+    // Obtém informações do ambiente atual
+    getEnvironmentInfo() {
+        const env = this.currentEnvironment;
+        const envConfig = CONFIG.ENVIRONMENTS[env];
+        
+        return {
+            environment: env,
+            name: envConfig.name,
+            apiUrl: envConfig.apiUrl,
+            icon: envConfig.icon,
+            isProduction: env !== 'local'
+        };
+    }
+    
+    // Obtém configuração do Stripe
+    getStripeConfig() {
+        return {
+            ...CONFIG.STRIPE,
+            publicKey: CONFIG.STRIPE.PUBLIC_KEY
+        };
+    }
+    
+    // Valida configurações
+    validateConfig() {
+        const issues = [];
+        
+        if (!this.apiBaseUrl) {
+            issues.push('URL da API não configurada');
+        }
+        
+        if (!CONFIG.STRIPE.PUBLIC_KEY || CONFIG.STRIPE.PUBLIC_KEY.includes('your_stripe_public_key')) {
+            issues.push('Chave pública do Stripe não configurada');
+        }
+        
+        return issues;
+    }
 }
 
-// Função para alternar entre ambientes
+// Instância global do gerenciador de configuração
+const configManager = new ConfigManager();
+
+// Funções de conveniência para compatibilidade
+function getApiUrl(endpoint) {
+    return configManager.getApiUrl(endpoint);
+}
+
 function switchEnvironment(env) {
-    switch(env) {
-        case 'local':
-            CONFIG.API_BASE_URL = 'http://localhost:8000';
-            break;
-        case 'vercel':
-            CONFIG.API_BASE_URL = 'https://moara.vercel.app';
-            break;
-        case 'vercel2':
-            CONFIG.API_BASE_URL = 'https://moaraenergiasolar.vercel.app';
-            break;
-        default:
-            CONFIG.API_BASE_URL = 'http://localhost:8000';
-    }
-    console.log(`🌍 Ambiente alterado para: ${CONFIG.API_BASE_URL}`);
+    return configManager.switchEnvironment(env);
+}
+
+function loadSavedEnvironment() {
+    return configManager.loadSavedEnvironment();
+}
+
+function testApiConnection() {
+    return configManager.testApiConnection();
+}
+
+function getEnvironmentInfo() {
+    return configManager.getEnvironmentInfo();
 }
 
 // Exporta para uso global
 window.CONFIG = CONFIG;
+window.configManager = configManager;
 window.getApiUrl = getApiUrl;
-window.switchEnvironment = switchEnvironment; 
+window.switchEnvironment = switchEnvironment;
+window.loadSavedEnvironment = loadSavedEnvironment;
+window.testApiConnection = testApiConnection;
+window.getEnvironmentInfo = getEnvironmentInfo;
+
+// Inicialização quando a página carrega
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualiza seletor visual
+    configManager.updateEnvironmentSelector();
+    
+    // Testa conectividade da API
+    setTimeout(() => {
+        testApiConnection();
+    }, 1000);
+    
+    // Listener para mudanças de ambiente
+    document.addEventListener('environmentChanged', (event) => {
+        console.log('Ambiente alterado:', event.detail);
+        
+        // Recarrega dados se necessário
+        if (typeof loadDashboardData === 'function') {
+            loadDashboardData();
+        }
+    });
+}); 

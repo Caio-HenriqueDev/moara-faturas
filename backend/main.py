@@ -1,108 +1,107 @@
-# USINA_CLIENTE/backend/main.py
+"""
+API principal do Sistema de Gestão de Faturas - Moara Energia
+Implementa todos os endpoints da API usando FastAPI
+"""
 
 from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from typing import List, Optional
-import os
+from typing import List
 import stripe
-from dotenv import load_dotenv
+from datetime import datetime
 
-# Carrega variáveis do ambiente
-load_dotenv()
-
-# Determina qual configuração de banco usar
-if os.getenv("VERCEL_ENV"):
-    # Está na Vercel - importações absolutas
-    import crud, models
-    from db_vercel import get_db, Base
-    from schemas import FaturaSchema
-    from utils import bot_mail, pdf_parser
-else:
-    # Está localmente
-    try:
-        from . import crud, models, db
-        from .schemas import FaturaSchema
-        from .utils import bot_mail, pdf_parser
-        get_db = db.get_db
-        Base = db.Base
-    except ImportError:
-        import crud, models, db
-        from schemas import FaturaSchema
-        from utils import bot_mail, pdf_parser
-        get_db = db.get_db
-        Base = db.Base
+# Importações locais com fallback para Vercel
+try:
+    # Desenvolvimento local
+    from .config import settings
+    from .database import get_db, create_tables
+    from . import crud
+    from .schemas import (
+        FaturaSchema, 
+        FaturaCreate, 
+        FaturaUpdate,
+        CheckoutSessionResponse,
+        ProcessamentoEmailResponse,
+        HealthCheckResponse
+    )
+    from .utils import bot_mail
+except ImportError:
+    # Vercel - imports absolutos
+    from config import settings
+    from database import get_db, create_tables
+    import crud
+    from schemas import (
+        FaturaSchema, 
+        FaturaCreate, 
+        FaturaUpdate,
+        CheckoutSessionResponse,
+        ProcessamentoEmailResponse,
+        HealthCheckResponse
+    )
+    from utils import bot_mail
 
 # Inicializa o aplicativo FastAPI
-app = FastAPI(title="Sistema de Gestão de Faturas - Moara Energia", version="1.0.0")
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    debug=settings.DEBUG
+)
 
-# CORS configurado para aceitar apenas o front
-from fastapi.middleware.cors import CORSMiddleware
-
-origins = [
-    "http://127.0.0.1:3000",  # Frontend com http.server
-    "http://localhost:3000",   # Frontend localhost
-    "https://*.vercel.app",    # Vercel domains
-    "https://*.vercel.app"     # Vercel domains
-]
-
+# Configuração CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Configuração do Stripe
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
-# Criação das tabelas (apenas se estiver localmente)
-if not os.getenv("VERCEL_ENV"):
+# Criação das tabelas (apenas se estiver na Vercel)
+if settings.IS_VERCEL:
     try:
-        db.create_tables()
-    except:
-        pass
+        create_tables()
+    except Exception as e:
+        print(f"⚠️ Aviso: Não foi possível criar tabelas: {e}")
 
-# Schemas Pydantic
-class FaturaBase(BaseModel):
-    nome_cliente: str
-    documento_cliente: str
-    email_cliente: str
-    numero_instalacao: str
-    valor_total: float
-    mes_referencia: str
-    data_vencimento: str
-    url_pdf: Optional[str] = None
+# Eventos da aplicação
+@app.on_event("startup")
+async def startup_event():
+    """Evento executado na inicialização da aplicação"""
+    print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} iniciando...")
+    print(f"🌍 Ambiente: {settings.ENVIRONMENT}")
+    
+    # Valida configurações
+    issues = settings.validate_config()
+    if issues:
+        print("⚠️ Problemas de configuração detectados:")
+        for issue in issues:
+            print(f"   - {issue}")
 
-class FaturaCreate(FaturaBase):
-    pass
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Evento executado no encerramento da aplicação"""
+    print(f"🛑 {settings.APP_NAME} encerrando...")
 
-class Fatura(FaturaBase):
-    id: int
-    ja_pago: bool
-    data_criacao: str
-    data_ultima_atualizacao: str
+# Endpoints da API
 
-    class Config:
-        from_attributes = True  # Pydantic v2
-
-class CheckoutSessionResponse(BaseModel):
-    session_id: str
-    checkout_url: str
-
-# Endpoint raiz para teste
-@app.get("/")
+@app.get("/", response_model=dict)
 def read_root():
     """
     Endpoint raiz para verificar se o backend está funcionando.
     """
     return {
-        "message": "Sistema de Gestão de Faturas - Moara Energia",
+        "message": settings.APP_NAME,
         "status": "online",
-        "version": "1.0.0",
+        "version": settings.APP_VERSION,
+        "environment": settings.ENVIRONMENT,
         "endpoints": {
             "docs": "/docs",
+            "health": "/health",
             "faturas": "/faturas/",
             "processar_email": "/processar_email/",
             "checkout": "/create-checkout-session/{fatura_id}",
@@ -110,71 +109,173 @@ def read_root():
         }
     }
 
-# Endpoint de health check
-@app.get("/health")
+@app.get("/health", response_model=HealthCheckResponse)
 def health_check():
     """
     Endpoint para verificar a saúde do sistema.
     """
-    return {
-        "status": "healthy",
-        "timestamp": "2024-01-01T00:00:00Z",
-        "services": {
-            "database": "ok",
-            "stripe": "ok",
-            "email": "ok"
-        }
-    }
+    try:
+        # Testa conexão com banco
+        db_status = "ok"
+        if settings.IS_VERCEL:
+            try:
+                from database import test_connection
+                if not test_connection():
+                    db_status = "error: connection failed"
+            except Exception as e:
+                db_status = f"error: {str(e)}"
+        
+        return HealthCheckResponse(
+            status="healthy",
+            timestamp=datetime.now().isoformat(),
+            environment=settings.ENVIRONMENT,
+            services={
+                "database": db_status,
+                "stripe": "ok" if stripe.api_key else "not_configured",
+                "email": "ok" if settings.EMAIL_USER and settings.EMAIL_PASS else "not_configured"
+            }
+        )
+    except Exception as e:
+        return HealthCheckResponse(
+            status="unhealthy",
+            timestamp=datetime.now().isoformat(),
+            environment=settings.ENVIRONMENT,
+            services={"error": str(e)}
+        )
 
-# Processar novos e-mails
-@app.post("/processar_email/")
+@app.post("/processar_email/", response_model=ProcessamentoEmailResponse)
 def processar_email(db_session: Session = Depends(get_db)):
     """
     Busca novos e-mails com anexos PDF, extrai os dados e salva/atualiza no banco.
     """
+    if not db_session:
+        raise HTTPException(status_code=500, detail="Banco de dados não disponível")
+    
     try:
         print("Iniciando busca e processamento de e-mails...")
         dados_emails = bot_mail.buscar_e_processar_emails()
 
         if not dados_emails:
-            return {"message": "Nenhum novo email com fatura encontrado."}
+            return ProcessamentoEmailResponse(
+                message="Nenhum novo email com fatura encontrado.",
+                faturas_processadas=0
+            )
 
+        faturas_processadas = 0
         for fatura_data in dados_emails:
-            fatura_existente = crud.get_fatura_by_instalacao(db_session, fatura_data["numero_instalacao"])
-            if fatura_existente:
-                crud.update_fatura(db_session, fatura_existente, fatura_data)
-                print(f"Fatura atualizada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
-            else:
-                crud.create_fatura(db_session, fatura_data)
-                print(f"Nova fatura criada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+            try:
+                fatura_existente = crud.get_fatura_by_instalacao(
+                    db_session, 
+                    fatura_data["numero_instalacao"]
+                )
+                
+                if fatura_existente:
+                    crud.update_fatura(db_session, fatura_existente, fatura_data)
+                    print(f"✅ Fatura atualizada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+                else:
+                    crud.create_fatura(db_session, fatura_data)
+                    print(f"✅ Nova fatura criada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+                
+                faturas_processadas += 1
+            except Exception as e:
+                print(f"❌ Erro ao processar fatura {fatura_data.get('numero_instalacao', 'N/A')}: {e}")
+                continue
 
-        return {"message": "Processamento de e-mails concluído com sucesso."}
+        return ProcessamentoEmailResponse(
+            message="Processamento de e-mails concluído com sucesso.",
+            faturas_processadas=faturas_processadas
+        )
 
     except Exception as e:
+        print(f"❌ Erro no processamento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro no processamento: {str(e)}")
 
-# Listar faturas
 @app.get("/faturas/", response_model=List[FaturaSchema])
-def listar_faturas(skip: int = 0, limit: int = 100, db_session: Session = Depends(get_db)):
+def listar_faturas(
+    skip: int = 0, 
+    limit: int = 100, 
+    db_session: Session = Depends(get_db)
+):
     """
     Retorna uma lista de todas as faturas cadastradas.
     """
-    faturas = crud.get_faturas(db_session, skip=skip, limit=limit)
-    return faturas
+    if not db_session:
+        raise HTTPException(status_code=500, detail="Banco de dados não disponível")
+    
+    try:
+        faturas = crud.get_faturas(db_session, skip=skip, limit=limit)
+        return faturas
+    except Exception as e:
+        print(f"❌ Erro ao listar faturas: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar faturas: {str(e)}")
 
-# Criar sessão de checkout no Stripe
+@app.get("/faturas/pendentes", response_model=List[FaturaSchema])
+def listar_faturas_pendentes(db_session: Session = Depends(get_db)):
+    """
+    Retorna uma lista de faturas pendentes de pagamento.
+    """
+    if not db_session:
+        raise HTTPException(status_code=500, detail="Banco de dados não disponível")
+    
+    try:
+        faturas = crud.FaturaCRUD.get_faturas_pendentes(db_session)
+        return faturas
+    except Exception as e:
+        print(f"❌ Erro ao listar faturas pendentes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar faturas pendentes: {str(e)}")
+
+@app.get("/faturas/pagas", response_model=List[FaturaSchema])
+def listar_faturas_pagas(db_session: Session = Depends(get_db)):
+    """
+    Retorna uma lista de faturas já pagas.
+    """
+    if not db_session:
+        raise HTTPException(status_code=500, detail="Banco de dados não disponível")
+    
+    try:
+        faturas = crud.FaturaCRUD.get_faturas_pagas(db_session)
+        return faturas
+    except Exception as e:
+        print(f"❌ Erro ao listar faturas pagas: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar faturas pagas: {str(e)}")
+
+@app.get("/faturas/{fatura_id}", response_model=FaturaSchema)
+def obter_fatura(fatura_id: int, db_session: Session = Depends(get_db)):
+    """
+    Retorna uma fatura específica pelo ID.
+    """
+    if not db_session:
+        raise HTTPException(status_code=500, detail="Banco de dados não disponível")
+    
+    try:
+        fatura = crud.get_fatura_by_id(db_session, fatura_id)
+        if not fatura:
+            raise HTTPException(status_code=404, detail="Fatura não encontrada")
+        return fatura
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Erro ao obter fatura: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao obter fatura: {str(e)}")
+
 @app.post("/create-checkout-session/{fatura_id}", response_model=CheckoutSessionResponse)
 def create_checkout_session(fatura_id: int, db_session: Session = Depends(get_db)):
     """
     Cria uma sessão de checkout do Stripe para pagamento de uma fatura.
     """
-    fatura = crud.get_fatura_by_id(db_session, fatura_id)
-    if not fatura:
-        raise HTTPException(status_code=404, detail="Fatura não encontrada")
-
-    valor_em_centavos = int(fatura.valor_total * 100)
-
+    if not db_session:
+        raise HTTPException(status_code=500, detail="Banco de dados não disponível")
+    
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe não configurado")
+    
     try:
+        fatura = crud.get_fatura_by_id(db_session, fatura_id)
+        if not fatura:
+            raise HTTPException(status_code=404, detail="Fatura não encontrada")
+
+        valor_em_centavos = int(fatura.valor_total * 100)
+
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
@@ -188,23 +289,36 @@ def create_checkout_session(fatura_id: int, db_session: Session = Depends(get_db
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/success") + "?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=os.getenv("FRONTEND_CANCEL_URL", "http://localhost:3000/cancel"),
+            success_url=f"{settings.FRONTEND_SUCCESS_URL}?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=settings.FRONTEND_CANCEL_URL,
             metadata={"fatura_id": str(fatura.id)}
         )
-        return {"session_id": session.id, "checkout_url": session.url}
+        
+        return CheckoutSessionResponse(
+            session_id=session.id, 
+            checkout_url=session.url
+        )
     except Exception as e:
+        print(f"❌ Erro ao criar sessão de checkout: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Webhook Stripe
 @app.post("/stripe-webhook/")
 async def stripe_webhook(request: Request, db_session: Session = Depends(get_db)):
     """
     Recebe eventos do Stripe para atualizar status de pagamento.
     """
+    if not db_session:
+        raise HTTPException(status_code=500, detail="Banco de dados não disponível")
+    
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe não configurado")
+    
     payload = await request.body()
     sig_header = request.headers.get('stripe-signature')
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+
+    if not webhook_secret:
+        raise HTTPException(status_code=500, detail="Webhook secret não configurado")
 
     try:
         event = stripe.Webhook.construct_event(
@@ -219,8 +333,11 @@ async def stripe_webhook(request: Request, db_session: Session = Depends(get_db)
         session = event['data']['object']
         fatura_id_str = session.get('metadata', {}).get('fatura_id')
         if fatura_id_str:
-            fatura_id = int(fatura_id_str)
-            crud.update_fatura_ja_pago(db_session, fatura_id)
-            print(f"Pagamento concluído para a fatura ID: {fatura_id}")
+            try:
+                fatura_id = int(fatura_id_str)
+                crud.update_fatura_ja_pago(db_session, fatura_id)
+                print(f"✅ Pagamento concluído para a fatura ID: {fatura_id}")
+            except Exception as e:
+                print(f"❌ Erro ao atualizar fatura {fatura_id_str}: {e}")
 
     return {"status": "success"}
