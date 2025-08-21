@@ -235,7 +235,7 @@ async function carregarDashboard() {
 // Carrega estatísticas do dashboard
 async function carregarEstatisticas() {
     try {
-        const response = await fetch("http://localhost:8000/faturas/");
+        const response = await fetch(getApiUrl("/faturas/"));
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -269,7 +269,7 @@ async function carregarEstatisticas() {
 // Carrega faturas recentes para o dashboard
 async function carregarFaturasRecentes() {
     try {
-        const response = await fetch("http://localhost:8000/faturas/");
+        const response = await fetch(getApiUrl("/faturas/"));
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -373,7 +373,7 @@ async function processarEmails() {
         try {
         console.log("📧 Iniciando processamento automático de e-mails...");
         
-        const response = await fetch("http://localhost:8000/processar_email/", {
+        const response = await fetch(getApiUrl("/processar_email/"), {
                 method: "POST",
             });
 
@@ -424,7 +424,7 @@ function showSection(sectionName) {
 // Carrega faturas para tabela
 async function carregarFaturasTabela() {
     try {
-        const response = await fetch("http://localhost:8000/faturas/");
+        const response = await fetch(getApiUrl("/faturas/"));
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -476,7 +476,7 @@ async function carregarFaturasTabela() {
 // Carrega clientes
 async function carregarClientes() {
     try {
-        const response = await fetch("http://localhost:8000/faturas/");
+        const response = await fetch(getApiUrl("/faturas/"));
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -528,7 +528,7 @@ async function carregarClientes() {
 // Carrega pagamentos
 async function carregarPagamentos() {
     try {
-        const response = await fetch("http://localhost:8000/faturas/");
+        const response = await fetch(getApiUrl("/faturas/"));
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -575,7 +575,7 @@ async function carregarPagamentos() {
 // Carrega relatórios
 async function carregarRelatorios() {
     try {
-        const response = await fetch("http://localhost:8000/faturas/");
+        const response = await fetch(getApiUrl("/faturas/"));
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -690,7 +690,7 @@ async function pagarFatura(faturaId) {
         
         mostrarNotificacao("💳 Iniciando pagamento...", "info");
         
-        const response = await fetch(`http://localhost:8000/create-checkout-session/${faturaId}`, {
+        const response = await fetch(getApiUrl(`/create-checkout-session/${faturaId}`), {
             method: 'POST'
         });
         
