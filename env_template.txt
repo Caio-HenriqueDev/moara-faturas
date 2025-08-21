@@ -1,0 +1,20 @@
+# TEMPLATE PARA ARQUIVO .env
+# Copie este arquivo para .env e configure suas credenciais
+
+# Configurações de E-mail (Gmail)
+EMAIL_USER=seu_email@gmail.com
+EMAIL_PASS=sua_senha_de_app_gmail
+EMAIL_HOST=imap.gmail.com
+EMAIL_PORT=993
+
+# Configurações do Stripe
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+STRIPE_PUBLIC_KEY=pk_test_your_stripe_public_key_here
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+# URLs do Frontend
+FRONTEND_SUCCESS_URL=http://localhost:3000/success
+FRONTEND_CANCEL_URL=http://localhost:3000/cancel
+
+# Configurações de Banco de Dados (para produção na Vercel)
+# DATABASE_URL=postgresql://user:password@host:port/database
