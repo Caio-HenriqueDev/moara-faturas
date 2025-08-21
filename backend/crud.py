@@ -1,9 +1,12 @@
-# USINA_CLIENTE/backend/utils/crud.py
+# USINA_CLIENTE/backend/crud.py
 from sqlalchemy.orm import Session
 try:
-    from ..models import Fatura
-except ImportError:
     from models import Fatura
+except ImportError:
+    try:
+        from .models import Fatura
+    except ImportError:
+        from backend.models import Fatura
 
 def get_fatura_by_instalacao(db: Session, numero_instalacao: str):
     """
@@ -46,7 +49,6 @@ def update_fatura(db: Session, db_fatura: Fatura, fatura_data: dict):
     db.refresh(db_fatura)
     
     return db_fatura
-
 
 # Função para buscar fatura por ID
 def get_fatura_by_id(db: Session, fatura_id: int):

@@ -13,17 +13,11 @@ load_dotenv()
 
 # Determina qual configuração de banco usar
 if os.getenv("VERCEL_ENV"):
-    # Está na Vercel
-    try:
-        from . import crud, models
-        from .db_vercel import get_db, Base
-        from .schemas import FaturaSchema
-        from .utils import bot_mail, pdf_parser
-    except ImportError:
-        import crud, models
-        from db_vercel import get_db, Base
-        from schemas import FaturaSchema
-        from utils import bot_mail, pdf_parser
+    # Está na Vercel - importações absolutas
+    import crud, models
+    from db_vercel import get_db, Base
+    from schemas import FaturaSchema
+    from utils import bot_mail, pdf_parser
 else:
     # Está localmente
     try:
