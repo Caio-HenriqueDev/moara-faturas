@@ -8,16 +8,17 @@
   ],
   "routes": [
     {
+      "src": "/",
+      "dest": "/api/index.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.py"
     }
   ],
-  "env": {
-    "PYTHONPATH": "."
-  },
   "functions": {
     "api/index.py": {
-      "maxDuration": 30
+      "maxDuration": 10
     }
   }
 } 
