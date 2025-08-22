@@ -12,42 +12,6 @@
   ],
   "routes": [
     {
-      "src": "/style.css",
-      "dest": "/frontend/style.css"
-    },
-    {
-      "src": "/app.js",
-      "dest": "/frontend/app.js"
-    },
-    {
-      "src": "/config.js",
-      "dest": "/frontend/config.js"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/frontend/js/$1"
-    },
-    {
-      "src": "/icons/(.*)",
-      "dest": "/frontend/icons/$1"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/frontend/manifest.json"
-    },
-    {
-      "src": "/sw.js",
-      "dest": "/frontend/sw.js"
-    },
-    {
-      "src": "/success",
-      "dest": "/frontend/success.html"
-    },
-    {
-      "src": "/cancel",
-      "dest": "/frontend/cancel.html"
-    },
-    {
       "src": "/api/(.*)",
       "dest": "/backend/main.py"
     },
@@ -90,6 +54,50 @@
     {
       "src": "/logs",
       "dest": "/backend/main.py"
+    },
+    {
+      "src": "/ping",
+      "dest": "/backend/main.py"
+    },
+    {
+      "src": "/teste_email_real",
+      "dest": "/backend/main.py"
+    },
+    {
+      "src": "/style.css",
+      "dest": "/frontend/style.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "/frontend/app.js"
+    },
+    {
+      "src": "/config.js",
+      "dest": "/frontend/config.js"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/frontend/js/$1"
+    },
+    {
+      "src": "/icons/(.*)",
+      "dest": "/frontend/icons/$1"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/frontend/manifest.json"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/frontend/sw.js"
+    },
+    {
+      "src": "/success",
+      "dest": "/frontend/success.html"
+    },
+    {
+      "src": "/cancel",
+      "dest": "/frontend/cancel.html"
     },
     {
       "src": "/",
