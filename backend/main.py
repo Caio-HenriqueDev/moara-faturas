@@ -115,6 +115,69 @@ def test_endpoint():
         "is_vercel": settings.IS_VERCEL
     }
 
+
+@app.post("/testar_pdf/")
+def testar_processamento_pdf():
+    """
+    Testa o processamento de um PDF específico para debug.
+    """
+    try:
+        print("🧪 Testando processamento de PDF...")
+        
+        # Lista arquivos na pasta de amostras
+        sample_path = settings.PDF_STORAGE_PATH
+        if not os.path.exists(sample_path):
+            return {
+                "status": "error",
+                "message": f"Pasta de amostras não encontrada: {sample_path}"
+            }
+        
+        arquivos = [f for f in os.listdir(sample_path) if f.endswith('.pdf')]
+        
+        if not arquivos:
+            return {
+                "status": "warning",
+                "message": "Nenhum PDF encontrado para teste",
+                "pasta": sample_path
+            }
+        
+        # Testa o primeiro PDF encontrado
+        pdf_teste = os.path.join(sample_path, arquivos[0])
+        print(f"📄 Testando PDF: {pdf_teste}")
+        
+        # Importa e testa o parser
+        from backend.utils.pdf_parser import extrair_dados_fatura_pdf
+        
+        dados = extrair_dados_fatura_pdf(pdf_teste)
+        
+        if dados:
+            return {
+                "status": "success",
+                "message": "PDF processado com sucesso",
+                "pdf_teste": arquivos[0],
+                "dados_extraidos": dados,
+                "pasta": sample_path,
+                "total_pdfs": len(arquivos)
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Falha ao processar PDF",
+                "pdf_teste": arquivos[0],
+                "pasta": sample_path,
+                "total_pdfs": len(arquivos)
+            }
+            
+    except Exception as e:
+        print(f"❌ Erro no teste de PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "message": f"Erro no teste: {str(e)}",
+            "traceback": str(e.__class__.__name__)
+        }
+
 @app.get("/health", response_model=HealthCheckResponse)
 def health_check():
     """

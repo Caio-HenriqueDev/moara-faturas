@@ -84,6 +84,10 @@
       "dest": "/backend/main.py"
     },
     {
+      "src": "/testar_pdf",
+      "dest": "/backend/main.py"
+    },
+    {
       "src": "/",
       "dest": "/frontend/index.html"
     },

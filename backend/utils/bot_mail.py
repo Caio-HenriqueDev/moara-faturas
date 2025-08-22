@@ -307,6 +307,7 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
                                 dados_fatura = processar_anexo_pdf(part, filename)
                                 if dados_fatura:
                                     print(f"✅ Fatura extraída: {dados_fatura.get('nome_cliente', 'N/A')}")
+                                    print(f"   📊 Dados: {dados_fatura}")
                                     faturas_processadas.append(dados_fatura)
                                 else:
                                     print(f"⚠️ Falha ao extrair dados da fatura: {filename}")
@@ -318,6 +319,7 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
                                 dados_fatura = processar_anexo_imagem(part, filename)
                                 if dados_fatura:
                                     print(f"✅ Fatura extraída da imagem: {dados_fatura.get('nome_cliente', 'N/A')}")
+                                    print(f"   📊 Dados: {dados_fatura}")
                                     faturas_processadas.append(dados_fatura)
                                 else:
                                     print(f"⚠️ Falha ao extrair dados da imagem: {filename}")
