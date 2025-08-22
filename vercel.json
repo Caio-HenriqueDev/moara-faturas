@@ -38,10 +38,48 @@
     {
       "source": "/stripe-webhook/(.*)",
       "destination": "backend/main.py"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/style.css",
+      "dest": "/frontend/style.css"
     },
     {
-      "source": "/(.*)",
-      "destination": "/frontend/index.html"
+      "src": "/app.js",
+      "dest": "/frontend/app.js"
+    },
+    {
+      "src": "/config.js",
+      "dest": "/frontend/config.js"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/frontend/js/$1"
+    },
+    {
+      "src": "/icons/(.*)",
+      "dest": "/frontend/icons/$1"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/frontend/manifest.json"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/frontend/sw.js"
+    },
+    {
+      "src": "/success",
+      "dest": "/frontend/success.html"
+    },
+    {
+      "src": "/cancel",
+      "dest": "/frontend/cancel.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/index.html"
     }
   ],
   "env": {
