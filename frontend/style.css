@@ -1373,3 +1373,124 @@ body {
     color: white;
     padding: 8px;
 }
+
+/* Status das Faturas e Valores por Status */
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.chart-container h3 {
+    color: #2d3748;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Gráfico de Pizza */
+.pie-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.chart-segment {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    color: white;
+}
+
+.chart-segment.paid {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.chart-segment.pending {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.chart-segment span {
+    font-size: 16px;
+}
+
+/* Gráfico de Barras */
+.bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.bar-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.bar-label {
+    min-width: 80px;
+    font-weight: 500;
+    color: #4a5568;
+    font-size: 14px;
+}
+
+.bar-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.bar {
+    height: 24px;
+    border-radius: 12px;
+    min-width: 20px;
+    transition: width 0.3s ease;
+}
+
+.bar.pending {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.bar.paid {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.bar-value {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 14px;
+    min-width: 80px;
+    text-align: right;
+}
+
+/* Estado vazio */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #718096;
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #cbd5e0;
+}
+
+.empty-state h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #4a5568;
+}
+
+.empty-state p {
+    font-size: 14px;
+    color: #718096;
+}
