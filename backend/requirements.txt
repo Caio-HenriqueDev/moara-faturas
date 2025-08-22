@@ -7,8 +7,8 @@ sqlalchemy>=2.0.23
 psycopg2-binary>=2.9.9; python_version<"3.13"
 psycopg2-binary>=2.9.10; python_version>="3.13"
 
-# Processamento de PDFs - USAR PyMuPDF (FUNCIONA)
-PyMuPDF>=1.23.0
+# Processamento de PDFs - USAR PyPDF2 (COMPATÍVEL COM VERCEL)
+PyPDF2>=3.0.1
 
 # Integrações
 stripe>=7.6.0

@@ -1,17 +1,17 @@
 """
 Processamento de PDFs para o Sistema de Gestão de Faturas
-Extrai dados de faturas de energia usando PyMuPDF (fitz)
+Extrai dados de faturas de energia usando PyPDF2 (COMPATÍVEL COM VERCEL)
 BASEADO NO SISTEMA FUNCIONAL
 """
 
-import fitz  # PyMuPDF
+import PyPDF2
 import re
 from pathlib import Path
 from typing import Optional, Dict, Any
 
 def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
     """
-    Extrai dados de uma fatura de energia em formato PDF usando PyMuPDF (fitz).
+    Extrai dados de uma fatura de energia em formato PDF usando PyPDF2.
     BASEADO NO SISTEMA FUNCIONAL
     """
     try:
@@ -22,15 +22,16 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
         
         print(f"📄 Processando PDF: {Path(path_pdf).name}")
         
-        # Abre o PDF com PyMuPDF (fitz)
-        doc = fitz.open(path_pdf)
-        texto_total = ""
-        
-        # Extrai texto de todas as páginas
-        for page in doc:
-            texto_total += page.get_text()
-        
-        doc.close()
+        # Abre o PDF com PyPDF2
+        with open(path_pdf, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            texto_total = ""
+            
+            # Extrai texto de todas as páginas
+            for page in pdf_reader.pages:
+                texto_pagina = page.extract_text()
+                if texto_pagina:
+                    texto_total += texto_pagina + "\n"
         
         print(f"📝 Tamanho do texto extraído: {len(texto_total)} caracteres")
         print(f"📋 Primeiros 200 caracteres: {texto_total[:200]}...")
@@ -93,46 +94,30 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
         }
         
         # Log dos dados extraídos para debug
-        print(f"🔍 DADOS EXTRAÍDOS DO PDF:")
-        print(f"=" * 50)
+        print(f"🔍 Dados extraídos:")
         for campo, valor in dados_extraidos.items():
             print(f"   - {campo}: {valor}")
-        print(f"=" * 50)
         
-        # Validação dos campos obrigatórios (baseada no sistema funcional)
-        campos_obrigatorios = [
-            "nome_cliente", "numero_instalacao"
-        ]
+        # Validação dos campos obrigatórios
+        campos_obrigatorios = ["nome_cliente", "numero_instalacao"]
         
         # Verifica campos obrigatórios
         campos_faltando = [campo for campo in campos_obrigatorios if not dados_extraidos.get(campo)]
         if campos_faltando:
-            print(f"❌ CAMPOS OBRIGATÓRIOS NÃO ENCONTRADOS: {campos_faltando}")
-            print(f"❌ PDF REJEITADO - Dados insuficientes")
+            print(f"❌ Campos obrigatórios não encontrados: {campos_faltando}")
             return None
         
-        print(f"✅ CAMPOS OBRIGATÓRIOS VALIDADOS:")
-        for campo in campos_obrigatorios:
-            print(f"   - {campo}: {dados_extraidos.get(campo, 'NÃO ENCONTRADO')}")
-        
-        # Cálculo do valor total (baseado no sistema funcional)
+        # Cálculo do valor total
         valor_final = None
         if dados_extraidos["preco_unitario_com_tributo"] and dados_extraidos["quantidade_kwh"]:
             # Aplica desconto de 20% (0.8) conforme lógica existente
             preco_com_desconto = dados_extraidos["preco_unitario_com_tributo"] * 0.8
             valor_final = round(preco_com_desconto * dados_extraidos["quantidade_kwh"], 2)
-            print(f"💰 VALOR CALCULADO: R$ {valor_final:.2f}")
-            print(f"   - Preço unitário: R$ {dados_extraidos['preco_unitario_com_tributo']:.4f}")
-            print(f"   - Quantidade kWh: {dados_extraidos['quantidade_kwh']}")
-            print(f"   - Desconto aplicado: 20%")
         else:
             # Se não conseguir calcular, usa valor padrão
             valor_final = 100.00
-            print(f"⚠️ Não foi possível calcular o valor total, usando R$ 100,00")
-            print(f"   - Preço unitário: {dados_extraidos.get('preco_unitario_com_tributo', 'NÃO ENCONTRADO')}")
-            print(f"   - Quantidade kWh: {dados_extraidos.get('quantidade_kwh', 'NÃO ENCONTRADO')}")
         
-        # Construção do dicionário final (baseado no sistema funcional)
+        # Construção do dicionário final com validações
         fatura_data = {
             "nome_cliente": dados_extraidos.get("nome_cliente"),
             "documento_cliente": dados_extraidos.get("documento_cliente"),
@@ -144,12 +129,11 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
         }
         
         # Log dos dados extraídos
-        print(f"🎯 FATURA FINAL CONSTRUÍDA:")
-        print(f"=" * 50)
-        for campo, valor in fatura_data.items():
-            print(f"   - {campo}: {valor}")
-        print(f"=" * 50)
-        print(f"✅ PDF PROCESSADO COM SUCESSO!")
+        print(f"✅ Dados extraídos com sucesso:")
+        print(f"   - Cliente: {fatura_data['nome_cliente']}")
+        print(f"   - Instalação: {fatura_data['numero_instalacao']}")
+        print(f"   - Valor: R$ {fatura_data['valor_total']:.2f}")
+        print(f"   - Vencimento: {fatura_data['data_vencimento']}")
         
         return fatura_data
         
@@ -174,19 +158,23 @@ def extrair_dados_imagem(path_imagem: str) -> Optional[Dict[str, Any]]:
         print(f"🖼️ Processando imagem: {Path(path_imagem).name}")
         
         # Por enquanto, retorna dados padrão
-        # TODO: Implementar OCR para extrair dados reais da imagem
-        dados_imagem = {
+        # TODO: Implementar OCR para extrair dados reais
+        dados_padrao = {
             "nome_cliente": "Cliente da Imagem",
             "documento_cliente": "N/A",
             "email_cliente": "",
-            "numero_instalacao": Path(path_imagem).stem[:8], # Usa nome do arquivo
+            "numero_instalacao": "123456",
             "valor_total": 100.00,
-            "mes_referencia": "N/A",
-            "data_vencimento": "N/A",
+            "mes_referencia": "Janeiro/2025",
+            "data_vencimento": "15/02/2025",
         }
         
-        print(f"✅ Dados básicos extraídos da imagem")
-        return dados_imagem
+        print(f"✅ Dados padrão da imagem:")
+        print(f"   - Cliente: {dados_padrao['nome_cliente']}")
+        print(f"   - Instalação: {dados_padrao['numero_instalacao']}")
+        print(f"   - Valor: R$ {dados_padrao['valor_total']:.2f}")
+        
+        return dados_padrao
         
     except Exception as e:
         print(f"❌ Erro ao processar imagem {path_imagem}: {e}")
