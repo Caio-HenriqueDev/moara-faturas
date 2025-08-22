@@ -63,8 +63,9 @@ class Settings:
         "http://127.0.0.1:3000",
         "http://localhost:3000",
         "https://*.vercel.app",
-        "https://moara.vercel.app",
-        "https://moaraenergiasolar.vercel.app"
+        "https://moara-solar-l7whuoy74-diretoriamoovestudio-5505s-projects.vercel.app",
+        "https://moara-solar-48c8u9u4c-diretoriamoovestudio-5505s-projects.vercel.app",
+        "https://moara-solar-re64ibgs1-diretoriamoovestudio-5505s-projects.vercel.app"
     ]
     
     # Configurações de arquivos

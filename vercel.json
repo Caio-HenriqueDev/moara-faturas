@@ -11,6 +11,7 @@
     }
   ],
   "routes": [
+    // API Routes - Prioridade alta
     {
       "src": "/api/(.*)",
       "dest": "/backend/main.py"
@@ -63,6 +64,7 @@
       "src": "/teste_email_real",
       "dest": "/backend/main.py"
     },
+    // Frontend Routes - Prioridade baixa
     {
       "src": "/style.css",
       "dest": "/frontend/style.css"
@@ -99,10 +101,7 @@
       "src": "/cancel",
       "dest": "/frontend/cancel.html"
     },
-    {
-      "src": "/",
-      "dest": "/frontend/index.html"
-    },
+    // Fallback para frontend
     {
       "src": "/(.*)",
       "dest": "/frontend/index.html"
