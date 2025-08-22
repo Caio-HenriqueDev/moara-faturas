@@ -10,36 +10,6 @@
       "use": "@vercel/static"
     }
   ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "backend/main.py"
-    },
-    {
-      "source": "/docs",
-      "destination": "backend/main.py"
-    },
-    {
-      "source": "/health",
-      "destination": "backend/main.py"
-    },
-    {
-      "source": "/faturas/(.*)",
-      "destination": "backend/main.py"
-    },
-    {
-      "source": "/processar_email/(.*)",
-      "destination": "backend/main.py"
-    },
-    {
-      "source": "/create-checkout-session/(.*)",
-      "destination": "backend/main.py"
-    },
-    {
-      "source": "/stripe-webhook/(.*)",
-      "destination": "backend/main.py"
-    }
-  ],
   "routes": [
     {
       "src": "/style.css",
@@ -78,6 +48,34 @@
       "dest": "/frontend/cancel.html"
     },
     {
+      "src": "/api/(.*)",
+      "dest": "/backend/main.py"
+    },
+    {
+      "src": "/docs",
+      "dest": "/backend/main.py"
+    },
+    {
+      "src": "/health",
+      "dest": "/backend/main.py"
+    },
+    {
+      "src": "/faturas/(.*)",
+      "dest": "/backend/main.py"
+    },
+    {
+      "src": "/processar_email/(.*)",
+      "dest": "/backend/main.py"
+    },
+    {
+      "src": "/create-checkout-session/(.*)",
+      "dest": "/backend/main.py"
+    },
+    {
+      "src": "/stripe-webhook/(.*)",
+      "dest": "/backend/main.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "/frontend/index.html"
     }
@@ -86,28 +84,5 @@
     "PYTHONPATH": ".",
     "VERCEL_ENV": "production"
   },
-  "regions": ["gru1"],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=31536000; includeSubDomains"
-        }
-      ]
-    }
-  ]
+  "regions": ["gru1"]
 } 
