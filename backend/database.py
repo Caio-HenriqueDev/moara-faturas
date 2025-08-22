@@ -4,7 +4,7 @@ Suporta SQLite (desenvolvimento), PostgreSQL (Vercel) e PostgreSQL (Hostinger)
 """
 
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.pool import NullPool, QueuePool
@@ -18,51 +18,97 @@ except ImportError:
     from config import settings
     from models import Base
 
-def get_database_url() -> str:
-    """Retorna a URL do banco baseada no ambiente"""
-    if settings.DATABASE_URL:
-        # Ajusta formato para PostgreSQL se necessário
-        if settings.DATABASE_URL.startswith("postgres://"):
-            return settings.DATABASE_URL.replace("postgres://", "postgresql://", 1)
-        return settings.DATABASE_URL
+def clean_database_url(database_url: str) -> str:
+    """
+    Limpa o DATABASE_URL removendo parâmetros incompatíveis
+    como pgbouncer que causam erros no SQLAlchemy
+    """
+    if not database_url or "postgresql" not in database_url:
+        return database_url
     
-    # Fallback para desenvolvimento local
-    return "sqlite:///./usina_cliente.db"
+    # Remove parâmetros problemáticos
+    problematic_params = [
+        "pgbouncer",
+        "pooling",
+        "connection_limit",
+        "connect_timeout"
+    ]
+    
+    # Divide a URL em partes
+    if "?" in database_url:
+        base_url, params = database_url.split("?", 1)
+        param_pairs = params.split("&")
+        
+        # Filtra parâmetros problemáticos
+        clean_params = []
+        for param in param_pairs:
+            param_name = param.split("=")[0]
+            if param_name not in problematic_params:
+                clean_params.append(param)
+        
+        # Reconstrói a URL
+        if clean_params:
+            return f"{base_url}?{'&'.join(clean_params)}"
+        else:
+            return base_url
+    else:
+        return database_url
+
+def get_database_url() -> str:
+    """Retorna a URL do banco de dados baseada no ambiente"""
+    if settings.IS_VERCEL or settings.IS_HOSTINGER:
+        database_url = settings.DATABASE_URL
+        if database_url:
+            # Limpa a URL removendo parâmetros incompatíveis
+            return clean_database_url(database_url)
+        return "postgresql://localhost/postgres"
+    else:
+        return "sqlite:///./usina_cliente.db"
 
 def create_database_engine():
     """Cria o engine do banco baseado na configuração"""
-    database_url = get_database_url()
-    config = settings.get_database_config()
-    
-    if config["type"] == "postgresql":
-        # PostgreSQL (Vercel ou Hostinger)
-        if config["pool_class"] == "NullPool":
-            engine = create_engine(
-                database_url,
-                poolclass=NullPool,
-                echo=settings.DEBUG
-                # NullPool não suporta connect_args
-            )
+    try:
+        database_url = get_database_url()
+        config = settings.get_database_config()
+        
+        print(f"🔧 Criando engine para: {config['type']}")
+        print(f"📡 URL: {database_url.replace(database_url.split('@')[0].split(':')[-1], '***') if '@' in database_url else database_url}")
+        
+        if config["type"] == "postgresql":
+            # PostgreSQL (Vercel ou Hostinger)
+            if config["pool_class"] == "NullPool":
+                engine = create_engine(
+                    database_url,
+                    poolclass=NullPool,
+                    echo=settings.DEBUG,
+                    # NullPool não suporta connect_args
+                )
+            else:
+                engine = create_engine(
+                    database_url,
+                    poolclass=QueuePool,
+                    pool_size=config.get("pool_size", 5),
+                    max_overflow=config.get("max_overflow", 10),
+                    pool_pre_ping=config.get("pool_pre_ping", True),
+                    pool_recycle=config.get("pool_recycle", 3600),
+                    echo=settings.DEBUG,
+                    **config.get("connect_args", {})
+                )
         else:
+            # SQLite (desenvolvimento local)
             engine = create_engine(
                 database_url,
-                poolclass=QueuePool,
-                pool_size=config.get("pool_size", 5),
-                max_overflow=config.get("max_overflow", 10),
-                pool_pre_ping=config.get("pool_pre_ping", True),
-                pool_recycle=config.get("pool_recycle", 3600),
-                echo=settings.DEBUG,
-                **config.get("connect_args", {})
+                echo=settings.DEBUG
+                # SQLite não suporta connect_args complexos
             )
-    else:
-        # SQLite (desenvolvimento local)
-        engine = create_engine(
-            database_url,
-            echo=settings.DEBUG
-            # SQLite não suporta connect_args complexos
-        )
-    
-    return engine
+        
+        print(f"✅ Engine criado com sucesso para {config['type']}")
+        return engine
+        
+    except Exception as e:
+        print(f"❌ Erro ao criar engine do banco: {e}")
+        print(f"🔧 Configuração: {config}")
+        raise
 
 # Cria o engine global
 engine = create_database_engine()
