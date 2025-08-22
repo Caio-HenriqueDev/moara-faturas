@@ -535,3 +535,143 @@ def get_logs():
 def ping():
     """Endpoint simples para testar se a API está funcionando"""
     return {"message": "pong", "status": "ok", "timestamp": datetime.now().isoformat()}
+
+@app.get("/teste_email_real")
+def teste_email_real():
+    """
+    Endpoint para testar o processamento completo de um email real
+    Cria um PDF de teste e processa como se fosse um anexo de email
+    """
+    try:
+        print("🧪 INICIANDO TESTE DE EMAIL REAL")
+        
+        # Importa módulos necessários
+        from utils.bot_mail import gerar_hash
+        from utils.pdf_parser import extrair_dados_fatura_pdf
+        import tempfile
+        import os
+        
+        # Cria PDF de teste
+        try:
+            from fpdf import FPDF
+            
+            # Cria PDF
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            
+            # Adiciona conteúdo da fatura
+            pdf.cell(200, 10, txt="FATURA DE ENERGIA ELETRICA", ln=True, align='C')
+            pdf.ln(10)
+            
+            pdf.cell(200, 10, txt="JOSE SILVA", ln=True, align='L')
+            pdf.cell(200, 10, txt="MURIAE", ln=True, align='L')
+            pdf.ln(5)
+            
+            pdf.cell(200, 10, txt="CNPJ/CPF/RANI: 123.456.789-00", ln=True, align='L')
+            pdf.cell(200, 10, txt="Instalacao: 123456 Ponta", ln=True, align='L')
+            pdf.cell(200, 10, txt="Mes Referencia: Agosto/2025", ln=True, align='L')
+            pdf.cell(200, 10, txt="Data Vencimento: 15/09/2025", ln=True, align='L')
+            pdf.ln(5)
+            
+            pdf.cell(200, 10, txt="Consumo em kWh:", ln=True, align='L')
+            pdf.cell(200, 10, txt="250,00", ln=True, align='L')
+            pdf.ln(5)
+            
+            pdf.cell(200, 10, txt="Preco Unitario: R$ 0,30", ln=True, align='L')
+            pdf.cell(200, 10, txt="Valor Total: R$ 75,00", ln=True, align='L')
+            pdf.ln(5)
+            
+            pdf.cell(200, 10, txt="Saldo Acumulado: 0,00", ln=True, align='L')
+            
+            # Salva em arquivo temporário
+            temp_file = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
+            pdf.output(temp_file.name)
+            temp_file.close()
+            
+            print(f"✅ PDF de teste criado: {temp_file.name}")
+            
+        except Exception as e:
+            print(f"❌ Erro ao criar PDF: {e}")
+            return {"status": "error", "message": f"Erro ao criar PDF: {str(e)}"}
+        
+        try:
+            # Gera hash do arquivo
+            with open(temp_file.name, 'rb') as f:
+                conteudo = f.read()
+            
+            hash_arquivo = gerar_hash(conteudo)
+            print(f"🔐 Hash gerado: {hash_arquivo}")
+            
+            # Cria diretório de armazenamento
+            storage_path = settings.PDF_STORAGE_PATH
+            os.makedirs(storage_path, exist_ok=True)
+            print(f"📁 Diretório criado: {storage_path}")
+            
+            # Salva arquivo com hash
+            path_final = os.path.join(storage_path, f"{hash_arquivo}.pdf")
+            with open(path_final, 'wb') as f:
+                f.write(conteudo)
+            print(f"💾 Arquivo salvo: {path_final}")
+            
+            # Testa extração de dados
+            print("🔍 TESTANDO EXTRAÇÃO DE DADOS...")
+            dados_extraidos = extrair_dados_fatura_pdf(path_final)
+            
+            if dados_extraidos:
+                print("✅ DADOS EXTRAÍDOS COM SUCESSO:")
+                for campo, valor in dados_extraidos.items():
+                    print(f"   - {campo}: {valor}")
+                
+                # Valida dados obrigatórios
+                campos_obrigatorios = ["nome_cliente", "numero_instalacao"]
+                campos_faltando = [campo for campo in campos_obrigatorios if not dados_extraidos.get(campo)]
+                
+                if not campos_faltando:
+                    print("🎯 VALIDAÇÃO: Todos os campos obrigatórios encontrados!")
+                    
+                    # Limpa arquivos temporários
+                    try:
+                        os.unlink(temp_file.name)
+                        os.unlink(path_final)
+                    except:
+                        pass
+                    
+                    return {
+                        "status": "success",
+                        "message": "Teste de email real concluído com sucesso!",
+                        "dados_extraidos": dados_extraidos,
+                        "hash_arquivo": hash_arquivo
+                    }
+                else:
+                    print(f"❌ VALIDAÇÃO: Campos faltando: {campos_faltando}")
+                    return {
+                        "status": "error",
+                        "message": f"Campos obrigatórios faltando: {campos_faltando}",
+                        "dados_extraidos": dados_extraidos
+                    }
+            else:
+                print("❌ Falha na extração de dados")
+                return {"status": "error", "message": "Falha na extração de dados do PDF"}
+                
+        except Exception as e:
+            print(f"❌ Erro durante o processamento: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"status": "error", "message": f"Erro durante o processamento: {str(e)}"}
+        
+        finally:
+            # Limpa arquivos temporários
+            try:
+                if 'temp_file' in locals() and os.path.exists(temp_file.name):
+                    os.unlink(temp_file.name)
+                if 'path_final' in locals() and os.path.exists(path_final):
+                    os.unlink(path_final)
+            except:
+                pass
+                
+    except Exception as e:
+        print(f"❌ Erro geral no teste: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": f"Erro geral: {str(e)}"}

@@ -10,6 +10,9 @@ psycopg2-binary>=2.9.10; python_version>="3.13"
 # Processamento de PDFs - USAR PyPDF2 (COMPATÍVEL COM VERCEL)
 PyPDF2>=3.0.1
 
+# Criação de PDFs para testes
+fpdf2>=2.8.4
+
 # Integrações
 stripe>=7.6.0
 
