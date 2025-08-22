@@ -237,9 +237,18 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
     faturas_processadas = []
     
     try:
-        print("🔌 Iniciando conexão com Gmail...")
+        print("=" * 80)
+        print("🚀 INICIANDO PROCESSAMENTO DE EMAILS")
+        print("=" * 80)
+        print(f"🔧 Configurações atuais:")
+        print(f"   - EMAIL_USER: {settings.EMAIL_USER}")
+        print(f"   - EMAIL_HOST: {settings.EMAIL_HOST}")
+        print(f"   - EMAIL_PORT: {settings.EMAIL_PORT}")
+        print(f"   - EMAIL_PASS: {'***CONFIGURADO***' if settings.EMAIL_PASS else 'NÃO CONFIGURADO'}")
+        print("=" * 80)
         
         # Conecta ao email
+        print("🔌 Tentando conexão com Gmail...")
         mail = conectar_email()
         if not mail:
             print("❌ Falha na conexão com Gmail")
@@ -261,10 +270,11 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
         # Processa apenas os últimos 50 emails para evitar sobrecarga
         emails_para_processar = email_ids[-50:] if len(email_ids) > 50 else email_ids
         print(f"📋 Processando os últimos {len(emails_para_processar)} emails")
+        print("=" * 80)
         
-        for email_id in emails_para_processar:
+        for i, email_id in enumerate(emails_para_processar):
             try:
-                print(f"📬 Processando email ID: {email_id}")
+                print(f"📬 [{i+1}/{len(emails_para_processar)}] Processando email ID: {email_id}")
                 
                 # Busca o email específico
                 status, msg_data = mail.fetch(email_id, "(RFC822)")
@@ -288,6 +298,8 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
                 # Verifica se tem anexos
                 if msg.is_multipart():
                     print(f"📎 Email é multipart, verificando anexos...")
+                    anexos_encontrados = 0
+                    
                     for part in msg.walk():
                         if part.get_content_maintype() == "multipart":
                             continue
@@ -297,8 +309,9 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
                         # Verifica se é PDF ou PNG
                         filename = part.get_filename()
                         if filename:
+                            anexos_encontrados += 1
                             filename_lower = filename.lower()
-                            print(f"📎 Anexo encontrado: {filename} (tipo: {part.get_content_type()})")
+                            print(f"📎 Anexo {anexos_encontrados}: {filename} (tipo: {part.get_content_type()})")
                             
                             if filename_lower.endswith(".pdf"):
                                 print(f"📎 Processando anexo PDF: {filename}")
@@ -327,32 +340,32 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
                                 print(f"ℹ️ Anexo ignorado (formato não suportado): {filename}")
                         else:
                             print(f"ℹ️ Anexo sem nome ignorado")
+                    
+                    if anexos_encontrados == 0:
+                        print(f"ℹ️ Email não tem anexos")
                 else:
-                    print(f"ℹ️ Email não tem anexos")
+                    print(f"ℹ️ Email não é multipart (sem anexos)")
                 
-                print(f"✅ Email {email_id} processado com sucesso")
+                print("-" * 60)
                 
             except Exception as e:
                 print(f"❌ Erro ao processar email {email_id}: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
         
-        print(f"🎉 Processamento concluído: {len(faturas_processadas)} faturas extraídas")
+        print("=" * 80)
+        print(f"🎯 PROCESSAMENTO CONCLUÍDO")
+        print(f"📊 Total de faturas processadas: {len(faturas_processadas)}")
+        print("=" * 80)
+        
+        return faturas_processadas
         
     except Exception as e:
-        print(f"❌ Erro geral no processamento de emails: {e}")
+        print(f"❌ Erro geral no processamento: {e}")
         import traceback
         traceback.print_exc()
-    
-    finally:
-        try:
-            if 'mail' in locals():
-                mail.close()
-                mail.logout()
-                print("🔌 Conexão com Gmail fechada")
-        except Exception as e:
-            print(f"⚠️ Erro ao fechar conexão: {e}")
-    
-    return faturas_processadas
+        return faturas_processadas
 
 def processar_email_especifico(email_id: str) -> Optional[Dict[str, Any]]:
     """

@@ -82,19 +82,22 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
     print(f"📋 Primeiros 200 caracteres: {texto_total[:200]}...")
     
     try:
-        # Extração de dados via regex com validações
+        # Extração de dados via regex com validações - VERSÃO SUPER FLEXÍVEL
         dados_extraidos = {
             "nome_cliente": buscar_regex(
-                r"\n([A-Z\s]{5,})\nMURIAE", 
+                r"\n([A-Z][A-Z\s]{4,})\n", 
                 texto_total
             ) or buscar_regex(
-                r"Cliente[:\s]*([A-Z\s]{5,})", 
+                r"Cliente[:\s]*([A-Z][A-Z\s]{4,})", 
                 texto_total
             ) or buscar_regex(
-                r"([A-Z\s]{5,})\s*-\s*[A-Z\s]+", 
+                r"([A-Z][A-Z\s]{4,})\s*[-–]\s*[A-Z\s]+", 
                 texto_total
             ) or buscar_regex(
                 r"([A-Z][A-Z\s]{4,})", 
+                texto_total
+            ) or buscar_regex(
+                r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,4})", 
                 texto_total
             ),
             "mes_referencia": buscar_regex(
@@ -106,6 +109,12 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             ) or buscar_regex(
                 r"(\w+\s+\d{4})", 
                 texto_total
+            ) or buscar_regex(
+                r"(\d{2}/\d{4})", 
+                texto_total
+            ) or buscar_regex(
+                r"(\w+\s+\d{2})", 
+                texto_total
             ),
             "data_vencimento": buscar_regex(
                 r"(\d{2}/\d{2}/\d{4})", 
@@ -115,6 +124,12 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 texto_total
             ) or buscar_regex(
                 r"(\d{2}-\d{2}-\d{4})", 
+                texto_total
+            ) or buscar_regex(
+                r"(\d{2}\.\d{2}\.\d{4})", 
+                texto_total
+            ) or buscar_regex(
+                r"(\d{2}/\d{2}/\d{2})", 
                 texto_total
             ),
             "preco_unitario_com_tributo": buscar_regex(
@@ -127,6 +142,14 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 tipo=lambda x: float(x.replace(",", "."))
             ) or buscar_regex(
                 r"([0-9.,]{4,})\s*R\$", 
+                texto_total,
+                tipo=lambda x: float(x.replace(",", "."))
+            ) or buscar_regex(
+                r"R\$\s*([0-9.,]{4,})", 
+                texto_total,
+                tipo=lambda x: float(x.replace(",", "."))
+            ) or buscar_regex(
+                r"([0-9]{1,3},[0-9]{2})", 
                 texto_total,
                 tipo=lambda x: float(x.replace(",", "."))
             ),
@@ -142,6 +165,14 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 r"(\d{3,4})\s*kWh", 
                 texto_total,
                 tipo=int
+            ) or buscar_regex(
+                r"(\d{3,4})\s*kW", 
+                texto_total,
+                tipo=int
+            ) or buscar_regex(
+                r"(\d{3,4})", 
+                texto_total,
+                tipo=int
             ),
             "numero_instalacao": buscar_regex(
                 r"\b(\d{6,8})\b", 
@@ -155,6 +186,9 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             ) or buscar_regex(
                 r"(\d{6,8})", 
                 texto_total
+            ) or buscar_regex(
+                r"(\d{5,9})", 
+                texto_total
             ),
             "saldo_acumulado_gdii": buscar_regex(
                 r"Saldo Acumulado:\s*([\d.,]+)", 
@@ -162,6 +196,10 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 tipo=lambda x: float(x.replace(".", "").replace(",", "."))
             ) or buscar_regex(
                 r"Saldo[:\s]*([\d.,]+)", 
+                texto_total,
+                tipo=lambda x: float(x.replace(".", "").replace(",", "."))
+            ) or buscar_regex(
+                r"([\d.,]+)\s*R\$", 
                 texto_total,
                 tipo=lambda x: float(x.replace(".", "").replace(",", "."))
             ),
@@ -177,6 +215,9 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             ) or buscar_regex(
                 r"([0-9]{11,18})", 
                 texto_total
+            ) or buscar_regex(
+                r"([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})", 
+                texto_total
             ),
             "email_cliente": buscar_regex(
                 r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", 
@@ -185,9 +226,11 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
         }
         
         # Log dos dados extraídos para debug
-        print(f"🔍 Dados extraídos:")
+        print(f"🔍 DADOS EXTRAÍDOS DO PDF:")
+        print(f"=" * 50)
         for campo, valor in dados_extraidos.items():
             print(f"   - {campo}: {valor}")
+        print(f"=" * 50)
         
         # Validação dos campos obrigatórios
         campos_obrigatorios = [
@@ -201,8 +244,13 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
         # Verifica campos obrigatórios
         campos_faltando = [campo for campo in campos_obrigatorios if not dados_extraidos.get(campo)]
         if campos_faltando:
-            print(f"❌ Campos obrigatórios não encontrados: {campos_faltando}")
+            print(f"❌ CAMPOS OBRIGATÓRIOS NÃO ENCONTRADOS: {campos_faltando}")
+            print(f"❌ PDF REJEITADO - Dados insuficientes")
             return None
+        
+        print(f"✅ CAMPOS OBRIGATÓRIOS VALIDADOS:")
+        for campo in campos_obrigatorios:
+            print(f"   - {campo}: {dados_extraidos.get(campo, 'NÃO ENCONTRADO')}")
         
         # Para campos opcionais, usa valores padrão se não encontrados
         if not dados_extraidos.get("documento_cliente"):
@@ -217,16 +265,26 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             dados_extraidos["data_vencimento"] = "N/A"
             print("⚠️ Data de vencimento não encontrada, usando 'N/A'")
         
+        print(f"✅ CAMPOS OPCIONAIS CONFIGURADOS:")
+        for campo in campos_opcionais:
+            print(f"   - {campo}: {dados_extraidos.get(campo, 'NÃO ENCONTRADO')}")
+        
         # Cálculo do valor total
         valor_final = None
         if dados_extraidos["preco_unitario_com_tributo"] and dados_extraidos["quantidade_kwh"]:
             # Aplica desconto de 20% (0.8) conforme lógica existente
             preco_com_desconto = dados_extraidos["preco_unitario_com_tributo"] * 0.8
             valor_final = round(preco_com_desconto * dados_extraidos["quantidade_kwh"], 2)
+            print(f"💰 VALOR CALCULADO: R$ {valor_final:.2f}")
+            print(f"   - Preço unitário: R$ {dados_extraidos['preco_unitario_com_tributo']:.4f}")
+            print(f"   - Quantidade kWh: {dados_extraidos['quantidade_kwh']}")
+            print(f"   - Desconto aplicado: 20%")
         else:
             # Se não conseguir calcular, usa valor padrão
             valor_final = 100.00
-            print("⚠️ Não foi possível calcular o valor total, usando R$ 100,00")
+            print(f"⚠️ Não foi possível calcular o valor total, usando R$ 100,00")
+            print(f"   - Preço unitário: {dados_extraidos.get('preco_unitario_com_tributo', 'NÃO ENCONTRADO')}")
+            print(f"   - Quantidade kWh: {dados_extraidos.get('quantidade_kwh', 'NÃO ENCONTRADO')}")
         
         # Construção do dicionário final com validações
         fatura_data = {
@@ -240,11 +298,12 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
         }
         
         # Log dos dados extraídos
-        print(f"✅ Dados extraídos com sucesso:")
-        print(f"   - Cliente: {fatura_data['nome_cliente']}")
-        print(f"   - Instalação: {fatura_data['numero_instalacao']}")
-        print(f"   - Valor: R$ {fatura_data['valor_total']:.2f}")
-        print(f"   - Vencimento: {fatura_data['data_vencimento']}")
+        print(f"🎯 FATURA FINAL CONSTRUÍDA:")
+        print(f"=" * 50)
+        for campo, valor in fatura_data.items():
+            print(f"   - {campo}: {valor}")
+        print(f"=" * 50)
+        print(f"✅ PDF PROCESSADO COM SUCESSO!")
         
         return fatura_data
         

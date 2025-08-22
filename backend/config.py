@@ -28,10 +28,10 @@ class Settings:
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
     
     # Configurações de email
-    EMAIL_USER: Optional[str] = os.getenv("GMAIL_USER") or os.getenv("EMAIL_USER")
-    EMAIL_PASS: Optional[str] = os.getenv("GMAIL_PASSWORD") or os.getenv("EMAIL_PASS")
-    EMAIL_HOST: str = os.getenv("GMAIL_HOST") or os.getenv("EMAIL_HOST", "imap.gmail.com")
-    EMAIL_PORT: int = int(os.getenv("GMAIL_PORT") or os.getenv("EMAIL_PORT", "993"))
+    EMAIL_USER: Optional[str] = os.getenv("EMAIL_USER") or os.getenv("GMAIL_USER")
+    EMAIL_PASS: Optional[str] = os.getenv("EMAIL_PASS") or os.getenv("GMAIL_PASSWORD")
+    EMAIL_HOST: str = os.getenv("EMAIL_HOST") or os.getenv("GMAIL_HOST", "imap.gmail.com")
+    EMAIL_PORT: int = int(os.getenv("EMAIL_PORT") or os.getenv("GMAIL_PORT", "993"))
     
     # Configurações do Stripe
     STRIPE_SECRET_KEY: Optional[str] = os.getenv("STRIPE_SECRET_KEY")
