@@ -546,8 +546,8 @@ def teste_email_real():
         print("🧪 INICIANDO TESTE DE EMAIL REAL")
         
         # Importa módulos necessários
-        from utils.bot_mail import gerar_hash
-        from utils.pdf_parser import extrair_dados_fatura_pdf
+        from .utils.bot_mail import gerar_hash
+        from .utils.pdf_parser import extrair_dados_fatura_pdf
         import tempfile
         import os
         
