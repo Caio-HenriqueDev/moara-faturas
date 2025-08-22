@@ -1495,6 +1495,15 @@ body {
 .empty-state p {
     font-size: 14px;
     color: #718096;
+    margin-bottom: 24px;
+}
+
+.empty-state-actions {
+    margin-top: 24px;
+}
+
+.empty-state-actions .btn {
+    min-width: 200px;
 }
 
 /* Seções de Conteúdo */
@@ -1681,20 +1690,24 @@ body {
     grid-column: 1 / -1;
 }
 
-/* Botões específicos para cada seção */
-.btn-importar-clientes,
-.btn-processar-pagamentos,
-.btn-relatorio-pagamentos,
-.btn-gerar-relatorio,
-.btn-exportar-dados {
-    transition: all 0.3s ease;
+/* Spinner de loading */
+.fa-spinner {
+    animation: spin 1s linear infinite;
 }
 
-.btn-importar-clientes:hover,
-.btn-processar-pagamentos:hover,
-.btn-relatorio-pagamentos:hover,
-.btn-gerar-relatorio:hover,
-.btn-exportar-dados:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Botões desabilitados */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn:disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
 }

@@ -13,17 +13,34 @@ class FaturaManager {
     // Carrega todas as faturas da API
     async carregarFaturas() {
         try {
+            showNotification('Carregando faturas...', 'info');
+            
             const response = await fetch(CONFIG.API_BASE_URL + CONFIG.ENDPOINTS.FATURAS);
+            
             if (response.ok) {
                 this.faturas = await response.json();
                 this.renderizarFaturas();
+                showNotification(`✅ ${this.faturas.length} faturas carregadas`, 'success');
                 return this.faturas;
             } else {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.detail || `Erro HTTP ${response.status}`;
+                throw new Error(errorMessage);
             }
         } catch (error) {
             console.error('❌ Erro ao carregar faturas:', error);
-            showNotification('Erro ao carregar faturas', 'error');
+            
+            let errorMessage = 'Erro ao carregar faturas';
+            if (error.message.includes('Banco de dados não disponível')) {
+                errorMessage = 'Erro de conexão com banco de dados';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Erro de conexão com a API';
+            }
+            
+            showNotification(errorMessage, 'error');
+            
+            // Mostra estado vazio com mensagem de erro
+            this.renderizarFaturas([]);
             return [];
         }
     }
@@ -31,26 +48,61 @@ class FaturaManager {
     // Processa emails para buscar novas faturas
     async processarEmails() {
         try {
+            // Mostra loading
+            const btnProcessar = document.querySelector('#btn-processar-emails, #btn-processar-emails-faturas');
+            if (btnProcessar) {
+                const originalText = btnProcessar.innerHTML;
+                btnProcessar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+                btnProcessar.disabled = true;
+            }
+            
             showNotification('Processando emails...', 'info');
             
             const response = await fetch(CONFIG.API_BASE_URL + CONFIG.ENDPOINTS.PROCESSAR_EMAIL, {
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
             
             if (response.ok) {
                 const result = await response.json();
-                showNotification(`Processamento concluído: ${result.faturas_processadas} faturas processadas`, 'success');
+                
+                if (result.faturas_processadas > 0) {
+                    showNotification(`✅ Processamento concluído: ${result.faturas_processadas} faturas processadas`, 'success');
+                } else {
+                    showNotification('ℹ️ Nenhuma nova fatura encontrada nos emails', 'info');
+                }
                 
                 // Recarrega as faturas
                 await this.carregarFaturas();
                 return result;
             } else {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.detail || `Erro HTTP ${response.status}`;
+                throw new Error(errorMessage);
             }
         } catch (error) {
             console.error('❌ Erro ao processar emails:', error);
-            showNotification('Erro ao processar emails', 'error');
+            
+            let errorMessage = 'Erro ao processar emails';
+            if (error.message.includes('Banco de dados não disponível')) {
+                errorMessage = 'Erro de conexão com banco de dados';
+            } else if (error.message.includes('Erro no processamento')) {
+                errorMessage = 'Erro interno no processamento';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Erro de conexão com a API';
+            }
+            
+            showNotification(errorMessage, 'error');
             return null;
+        } finally {
+            // Restaura botão
+            const btnProcessar = document.querySelector('#btn-processar-emails, #btn-processar-emails-faturas');
+            if (btnProcessar) {
+                btnProcessar.innerHTML = '<i class="fas fa-envelope"></i> Processar Emails';
+                btnProcessar.disabled = false;
+            }
         }
     }
     
@@ -173,6 +225,12 @@ class FaturaManager {
                     <i class="fas fa-file-invoice-dollar"></i>
                     <h3>Nenhuma fatura encontrada</h3>
                     <p>Clique em "Processar Emails" para buscar novas faturas</p>
+                    <div class="empty-state-actions">
+                        <button class="btn btn-primary" onclick="faturaManager.processarEmails()">
+                            <i class="fas fa-envelope"></i>
+                            Processar Emails Agora
+                        </button>
+                    </div>
                 </div>
             `;
             return;
