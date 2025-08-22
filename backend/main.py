@@ -530,3 +530,8 @@ def get_logs():
             "status": "error",
             "message": str(e)
         }
+
+@app.get("/ping")
+def ping():
+    """Endpoint simples para testar se a API está funcionando"""
+    return {"message": "pong", "status": "ok", "timestamp": datetime.now().isoformat()}
