@@ -364,6 +364,42 @@
         </div>
     </div>
 
+    <!-- Modal Novo Cliente -->
+    <div id="modal-novo-cliente" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Cliente</h3>
+                <button id="close-novo-cliente" class="close-btn">&times;</button>
+            </div>
+            <form id="form-novo-cliente" class="modal-form">
+                <div class="form-group">
+                    <label for="novo-nome-cliente">Nome do Cliente</label>
+                    <input type="text" id="novo-nome-cliente" name="novo_nome_cliente" required>
+                </div>
+                <div class="form-group">
+                    <label for="novo-documento-cliente">CPF/CNPJ</label>
+                    <input type="text" id="novo-documento-cliente" name="novo_documento_cliente" required>
+                </div>
+                <div class="form-group">
+                    <label for="novo-email-cliente">Email</label>
+                    <input type="email" id="novo-email-cliente" name="novo_email_cliente" required>
+                </div>
+                <div class="form-group">
+                    <label for="novo-telefone-cliente">Telefone</label>
+                    <input type="tel" id="novo-telefone-cliente" name="novo_telefone_cliente">
+                </div>
+                <div class="form-group">
+                    <label for="novo-endereco-cliente">Endereço</label>
+                    <textarea id="novo-endereco-cliente" name="novo_endereco_cliente" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Criar Cliente</button>
+                    <button type="button" id="cancelar-novo-cliente" class="btn btn-secondary">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <!-- Carrega módulos na ordem correta -->
     <script src="/config.js"></script>
