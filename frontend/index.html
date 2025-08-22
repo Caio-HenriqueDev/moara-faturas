@@ -173,7 +173,105 @@
                 </div>
             </section>
 
-            <!-- Outras seções serão adicionadas conforme necessário -->
+            <!-- Clientes Section -->
+            <section id="clientes" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>Gestão de Clientes</h2>
+                    <div class="section-actions">
+                        <button id="novo-cliente" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Novo Cliente
+                        </button>
+                        <button id="btn-importar-clientes" class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Importar Clientes
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label for="cliente-search">Buscar Cliente:</label>
+                        <input type="text" id="cliente-search" placeholder="Nome, CPF/CNPJ ou Email...">
+                    </div>
+                </div>
+
+                <!-- Clientes Container -->
+                <div id="clientes-container" class="clientes-grid">
+                    <!-- Clientes serão renderizados dinamicamente -->
+                </div>
+            </section>
+
+            <!-- Pagamentos Section -->
+            <section id="pagamentos" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>Gestão de Pagamentos</h2>
+                    <div class="section-actions">
+                        <button id="btn-processar-pagamentos" class="btn btn-primary">
+                            <i class="fas fa-credit-card"></i>
+                            Processar Pagamentos
+                        </button>
+                        <button id="btn-relatorio-pagamentos" class="btn btn-secondary">
+                            <i class="fas fa-chart-bar"></i>
+                            Relatório de Pagamentos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label for="status-pagamento-filter">Status:</label>
+                        <select id="status-pagamento-filter" class="status-filter">
+                            <option value="todos">Todos</option>
+                            <option value="pendentes">Pendentes</option>
+                            <option value="confirmados">Confirmados</option>
+                            <option value="cancelados">Cancelados</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Pagamentos Container -->
+                <div id="pagamentos-container" class="pagamentos-grid">
+                    <!-- Pagamentos serão renderizados dinamicamente -->
+                </div>
+            </section>
+
+            <!-- Relatórios Section -->
+            <section id="relatorios" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>Relatórios e Análises</h2>
+                    <div class="section-actions">
+                        <button id="btn-gerar-relatorio" class="btn btn-primary">
+                            <i class="fas fa-file-alt"></i>
+                            Gerar Relatório
+                        </button>
+                        <button id="btn-exportar-dados" class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Exportar Dados
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label for="periodo-relatorio">Período:</label>
+                        <select id="periodo-relatorio" class="periodo-filter">
+                            <option value="mes-atual">Mês Atual</option>
+                            <option value="trimestre">Último Trimestre</option>
+                            <option value="ano">Último Ano</option>
+                            <option value="personalizado">Personalizado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Relatórios Container -->
+                <div id="relatorios-container" class="relatorios-grid">
+                    <!-- Relatórios serão renderizados dinamicamente -->
+                </div>
+            </section>
         </div>
     </main>
 

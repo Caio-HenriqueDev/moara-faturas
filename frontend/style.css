@@ -1494,3 +1494,133 @@ body {
     font-size: 14px;
     color: #718096;
 }
+
+/* Seções de Conteúdo */
+.content-section {
+    padding: 24px;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f7fafc;
+}
+
+.section-header h2 {
+    color: #2d3748;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.section-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Filtros */
+.filters-section {
+    background: #f7fafc;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #4a5568;
+    min-width: 100px;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    min-width: 200px;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Grids para diferentes seções */
+.clientes-grid,
+.faturas-grid,
+.pagamentos-grid,
+.relatorios-grid {
+    display: grid;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Grid responsivo */
+@media (min-width: 768px) {
+    .clientes-grid,
+    .faturas-grid,
+    .pagamentos-grid,
+    .relatorios-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+}
+
+@media (min-width: 1200px) {
+    .clientes-grid,
+    .faturas-grid,
+    .pagamentos-grid,
+    .relatorios-grid {
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    }
+}
+
+/* Estados vazios específicos para cada seção */
+.clientes-grid:empty::after,
+.faturas-grid:empty::after,
+.pagamentos-grid:empty::after,
+.relatorios-grid:empty::after {
+    content: "Nenhum item encontrado";
+    display: block;
+    text-align: center;
+    padding: 48px 24px;
+    color: #718096;
+    font-style: italic;
+    grid-column: 1 / -1;
+}
+
+/* Botões específicos para cada seção */
+.btn-importar-clientes,
+.btn-processar-pagamentos,
+.btn-relatorio-pagamentos,
+.btn-gerar-relatorio,
+.btn-exportar-dados {
+    transition: all 0.3s ease;
+}
+
+.btn-importar-clientes:hover,
+.btn-processar-pagamentos:hover,
+.btn-relatorio-pagamentos:hover,
+.btn-gerar-relatorio:hover,
+.btn-exportar-dados:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
