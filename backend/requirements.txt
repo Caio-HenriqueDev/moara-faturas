@@ -1,21 +1,20 @@
-# Sistema de Gestão de Faturas - Moara Energia
-# Dependências Python para o backend
-
-# FastAPI e servidor
+# Core Framework
 fastapi>=0.104.1
 uvicorn[standard]>=0.24.0
 
-# Banco de dados
+# Banco de Dados
 sqlalchemy>=2.0.23
 psycopg2-binary>=2.9.9; python_version<"3.13"
 psycopg2-binary>=2.9.10; python_version>="3.13"
 
-# Processamento de PDF
-PyPDF2>=3.0.1
+# Processamento de PDFs - USAR PyMuPDF (FUNCIONA)
+PyMuPDF>=1.23.0
 
-# Email e utilitários
-python-dotenv>=1.0.0
+# Integrações
 stripe>=7.6.0
+
+# Utilitários
+python-dotenv>=1.0.0
 
 # Validação de dados
 pydantic>=2.5.0; python_version<"3.13"

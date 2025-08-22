@@ -1,202 +1,73 @@
 """
-Parser de PDF para o Sistema de Gestão de Faturas
-Extrai dados estruturados de faturas de energia em formato PDF
+Processamento de PDFs para o Sistema de Gestão de Faturas
+Extrai dados de faturas de energia usando PyMuPDF (fitz)
+BASEADO NO SISTEMA FUNCIONAL
 """
 
-import PyPDF2
+import fitz  # PyMuPDF
 import re
-from typing import Optional, Dict, Any
 from pathlib import Path
-
-def extrair_texto_pdf(path_pdf: str) -> Optional[str]:
-    """
-    Extrai texto de um arquivo PDF.
-    
-    Args:
-        path_pdf: Caminho para o arquivo PDF
-        
-    Returns:
-        Texto extraído ou None se falhar
-    """
-    try:
-        with open(path_pdf, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
-            texto_total = ""
-            
-            for page in pdf_reader.pages:
-                texto_pagina = page.extract_text()
-                if texto_pagina:
-                    texto_total += texto_pagina + "\n"
-            
-            return texto_total
-    except Exception as e:
-        print(f"❌ Erro ao extrair texto do PDF {path_pdf}: {e}")
-        return None
-
-def buscar_regex(padrao: str, texto: str, grupo: int = 1, tipo=str) -> Optional[Any]:
-    """
-    Função auxiliar para buscar padrões regex com conversão de tipo.
-    
-    Args:
-        padrao: Padrão regex para buscar
-        texto: Texto onde buscar
-        grupo: Grupo do regex a retornar
-        tipo: Tipo para converter o resultado
-        
-    Returns:
-        Valor encontrado convertido para o tipo especificado ou None
-    """
-    try:
-        # Tenta buscar o padrão
-        match = re.search(padrao, texto, re.IGNORECASE | re.MULTILINE)
-        if match:
-            valor = match.group(grupo).strip()
-            if valor:
-                # Log do padrão encontrado para debug
-                print(f"🔍 Regex encontrado: '{padrao}' → '{valor}'")
-                
-                # Tenta converter para o tipo especificado
-                try:
-                    if tipo == str:
-                        return valor
-                    elif tipo == int:
-                        # Remove caracteres não numéricos
-                        valor_limpo = re.sub(r'[^\d]', '', valor)
-                        return int(valor_limpo) if valor_limpo else None
-                    elif tipo == float:
-                        # Converte vírgula para ponto e remove espaços
-                        valor_limpo = valor.replace(',', '.').replace(' ', '')
-                        return float(valor_limpo) if valor_limpo else None
-                    else:
-                        # Para funções lambda customizadas
-                        return tipo(valor)
-                except (ValueError, TypeError) as e:
-                    print(f"⚠️ Erro ao converter valor '{valor}' para tipo {tipo.__name__}: {e}")
-                    return None
-        return None
-    except Exception as e:
-        print(f"⚠️ Erro no regex '{padrao}': {e}")
-        return None
+from typing import Optional, Dict, Any
 
 def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
     """
-    Extrai dados de uma fatura de energia em formato PDF.
-    
-    Args:
-        path_pdf: Caminho para o arquivo PDF
-        
-    Returns:
-        Dicionário com os dados extraídos ou None se falhar
+    Extrai dados de uma fatura de energia em formato PDF usando PyMuPDF (fitz).
+    BASEADO NO SISTEMA FUNCIONAL
     """
-    # Verifica se o arquivo existe
-    if not Path(path_pdf).exists():
-        print(f"❌ Arquivo PDF não encontrado: {path_pdf}")
-        return None
-    
-    # Extrai texto do PDF
-    texto_total = extrair_texto_pdf(path_pdf)
-    if not texto_total:
-        return None
-    
-    print(f"📄 Processando PDF: {Path(path_pdf).name}")
-    print(f"📝 Tamanho do texto extraído: {len(texto_total)} caracteres")
-    print(f"📋 Primeiros 200 caracteres: {texto_total[:200]}...")
-    
     try:
-        # Extração de dados via regex com validações - VERSÃO SUPER FLEXÍVEL E ROBUSTA
+        # Verifica se o arquivo existe
+        if not Path(path_pdf).exists():
+            print(f"❌ Arquivo PDF não encontrado: {path_pdf}")
+            return None
+        
+        print(f"📄 Processando PDF: {Path(path_pdf).name}")
+        
+        # Abre o PDF com PyMuPDF (fitz)
+        doc = fitz.open(path_pdf)
+        texto_total = ""
+        
+        # Extrai texto de todas as páginas
+        for page in doc:
+            texto_total += page.get_text()
+        
+        doc.close()
+        
+        print(f"📝 Tamanho do texto extraído: {len(texto_total)} caracteres")
+        print(f"📋 Primeiros 200 caracteres: {texto_total[:200]}...")
+        
+        # Função auxiliar para buscar regex (baseada no sistema funcional)
+        def buscar_regex(padrao, texto, grupo=1, tipo=str):
+            match = re.search(padrao, texto, re.IGNORECASE)
+            if match:
+                valor = match.group(grupo).strip()
+                if valor:
+                    print(f"🔍 Regex encontrado: '{padrao}' → '{valor}'")
+                    try:
+                        if tipo == str:
+                            return valor
+                        elif tipo == int:
+                            # Remove caracteres não numéricos
+                            valor_limpo = re.sub(r'[^\d]', '', valor)
+                            return int(valor_limpo) if valor_limpo else None
+                        elif tipo == float:
+                            # Converte vírgula para ponto e remove espaços
+                            valor_limpo = valor.replace(',', '.').replace(' ', '')
+                            return float(valor_limpo) if valor_limpo else None
+                        else:
+                            # Para funções lambda customizadas
+                            return tipo(valor)
+                    except (ValueError, TypeError) as e:
+                        print(f"⚠️ Erro ao converter valor '{valor}' para tipo {tipo.__name__}: {e}")
+                        return None
+            return None
+        
+        # Extração de dados via regex - PADRÕES QUE FUNCIONAM
         dados_extraidos = {
-            "nome_cliente": buscar_regex(
-                r"\n([A-Z][A-Z\s]{4,})\n", 
-                texto_total
-            ) or buscar_regex(
-                r"Cliente[:\s]*([A-Z][A-Z\s]{4,})", 
-                texto_total
-            ) or buscar_regex(
-                r"([A-Z][A-Z\s]{4,})\s*[-–]\s*[A-Z\s]+", 
-                texto_total
-            ) or buscar_regex(
-                r"([A-Z][A-Z\s]{4,})", 
-                texto_total
-            ) or buscar_regex(
-                r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,4})", 
-                texto_total
-            ) or buscar_regex(
-                r"([A-Z][A-Z\s]{3,})", 
-                texto_total
-            ) or buscar_regex(
-                r"([A-Z][a-z]+(?:\s+[a-z]+){1,3})", 
-                texto_total
-            ),
-            "mes_referencia": buscar_regex(
-                r"(\w+\s*/\s*\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"Referência[:\s]*(\w+\s*\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\w+\s+\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{2}/\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\w+\s+\d{2})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\w+\s+\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{2}/\d{2}/\d{4})", 
-                texto_total
-            ),
-            "data_vencimento": buscar_regex(
-                r"(\d{2}/\d{2}/\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"Vencimento[:\s]*(\d{2}/\d{2}/\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{2}-\d{2}-\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{2}\.\d{2}\.\d{4})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{2}/\d{2}/\d{2})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{2}-\d{2}-\d{2})", 
-                texto_total
-            ) or buscar_regex(
-                r"Vencimento[:\s]*(\d{2}/\d{2}/\d{4})", 
-                texto_total
-            ),
+            "nome_cliente": buscar_regex(r"\n([A-Z\s]{5,})\nMURIAE", texto_total),
+            "mes_referencia": buscar_regex(r"(\w+\s*/\s*\d{4})", texto_total),
+            "data_vencimento": buscar_regex(r"(\d{2}/\d{2}/\d{4})", texto_total),
             "preco_unitario_com_tributo": buscar_regex(
                 r"Consumo em kWh.*?\n.*?([0-9.,]{4,})", 
-                texto_total,
-                tipo=lambda x: float(x.replace(",", "."))
-            ) or buscar_regex(
-                r"Preço[:\s]*R?\$?\s*([0-9.,]{4,})", 
-                texto_total,
-                tipo=lambda x: float(x.replace(",", "."))
-            ) or buscar_regex(
-                r"([0-9.,]{4,})\s*R\$", 
-                texto_total,
-                tipo=lambda x: float(x.replace(",", "."))
-            ) or buscar_regex(
-                r"R\$\s*([0-9.,]{4,})", 
-                texto_total,
-                tipo=lambda x: float(x.replace(",", "."))
-            ) or buscar_regex(
-                r"([0-9]{1,3},[0-9]{2})", 
-                texto_total,
-                tipo=lambda x: float(x.replace(",", "."))
-            ) or buscar_regex(
-                r"([0-9]{1,3}\.[0-9]{2})", 
-                texto_total,
-                tipo=lambda x: float(x.replace(".", "").replace(",", "."))
-            ) or buscar_regex(
-                r"([0-9]{1,3},[0-9]{2})", 
                 texto_total,
                 tipo=lambda x: float(x.replace(",", "."))
             ),
@@ -204,96 +75,18 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 r"\b([23][0-9]{2}),00\b", 
                 texto_total,
                 tipo=lambda x: int(x.replace(",", ""))
-            ) or buscar_regex(
-                r"Consumo[:\s]*(\d+)\s*kWh", 
-                texto_total,
-                tipo=int
-            ) or buscar_regex(
-                r"(\d{3,4})\s*kWh", 
-                texto_total,
-                tipo=int
-            ) or buscar_regex(
-                r"(\d{3,4})\s*kW", 
-                texto_total,
-                tipo=int
-            ) or buscar_regex(
-                r"(\d{3,4})", 
-                texto_total,
-                tipo=int
-            ) or buscar_regex(
-                r"Consumo[:\s]*(\d+)", 
-                texto_total,
-                tipo=int
-            ) or buscar_regex(
-                r"(\d{3,4})\s*[kK][wW][hH]", 
-                texto_total,
-                tipo=int
             ),
-            "numero_instalacao": buscar_regex(
-                r"\b(\d{6,8})\b", 
-                texto_total
-            ) or buscar_regex(
-                r"Instalação[:\s]*(\d{6,8})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{6,8})\s*[A-Z]", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{6,8})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{5,9})", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{6,8})\s*[A-Z]", 
-                texto_total
-            ) or buscar_regex(
-                r"(\d{6,8})\s*[a-zA-Z]", 
-                texto_total
-            ),
+            "numero_instalacao": buscar_regex(r"\b(\d{6})\s*Ponta", texto_total),
             "saldo_acumulado_gdii": buscar_regex(
                 r"Saldo Acumulado:\s*([\d.,]+)", 
-                texto_total,
-                tipo=lambda x: float(x.replace(".", "").replace(",", "."))
-            ) or buscar_regex(
-                r"Saldo[:\s]*([\d.,]+)", 
-                texto_total,
-                tipo=lambda x: float(x.replace(".", "").replace(",", "."))
-            ) or buscar_regex(
-                r"([\d.,]+)\s*R\$", 
-                texto_total,
-                tipo=lambda x: float(x.replace(".", "").replace(",", "."))
-            ) or buscar_regex(
-                r"Saldo[:\s]*([\d.,]+)", 
                 texto_total,
                 tipo=lambda x: float(x.replace(".", "").replace(",", "."))
             ),
             "documento_cliente": buscar_regex(
                 r"CNPJ/CPF/RANI[:\s]*([0-9Xx./-]{11,20})", 
                 texto_total
-            ) or buscar_regex(
-                r"CPF[:\s]*([0-9]{11,14})", 
-                texto_total
-            ) or buscar_regex(
-                r"CNPJ[:\s]*([0-9]{14,18})", 
-                texto_total
-            ) or buscar_regex(
-                r"([0-9]{11,18})", 
-                texto_total
-            ) or buscar_regex(
-                r"([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})", 
-                texto_total
-            ) or buscar_regex(
-                r"([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})", 
-                texto_total
-            ) or buscar_regex(
-                r"([0-9]{11,18})", 
-                texto_total
             ),
             "email_cliente": buscar_regex(
-                r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", 
-                texto_total
-            ) or buscar_regex(
                 r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", 
                 texto_total
             ),
@@ -306,13 +99,9 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             print(f"   - {campo}: {valor}")
         print(f"=" * 50)
         
-        # Validação dos campos obrigatórios
+        # Validação dos campos obrigatórios (baseada no sistema funcional)
         campos_obrigatorios = [
             "nome_cliente", "numero_instalacao"
-        ]
-        
-        campos_opcionais = [
-            "documento_cliente", "mes_referencia", "data_vencimento"
         ]
         
         # Verifica campos obrigatórios
@@ -326,24 +115,7 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
         for campo in campos_obrigatorios:
             print(f"   - {campo}: {dados_extraidos.get(campo, 'NÃO ENCONTRADO')}")
         
-        # Para campos opcionais, usa valores padrão se não encontrados
-        if not dados_extraidos.get("documento_cliente"):
-            dados_extraidos["documento_cliente"] = "N/A"
-            print("⚠️ Documento do cliente não encontrado, usando 'N/A'")
-        
-        if not dados_extraidos.get("mes_referencia"):
-            dados_extraidos["mes_referencia"] = "N/A"
-            print("⚠️ Mês de referência não encontrado, usando 'N/A'")
-        
-        if not dados_extraidos.get("data_vencimento"):
-            dados_extraidos["data_vencimento"] = "N/A"
-            print("⚠️ Data de vencimento não encontrada, usando 'N/A'")
-        
-        print(f"✅ CAMPOS OPCIONAIS CONFIGURADOS:")
-        for campo in campos_opcionais:
-            print(f"   - {campo}: {dados_extraidos.get(campo, 'NÃO ENCONTRADO')}")
-        
-        # Cálculo do valor total
+        # Cálculo do valor total (baseado no sistema funcional)
         valor_final = None
         if dados_extraidos["preco_unitario_com_tributo"] and dados_extraidos["quantidade_kwh"]:
             # Aplica desconto de 20% (0.8) conforme lógica existente
@@ -360,15 +132,15 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             print(f"   - Preço unitário: {dados_extraidos.get('preco_unitario_com_tributo', 'NÃO ENCONTRADO')}")
             print(f"   - Quantidade kWh: {dados_extraidos.get('quantidade_kwh', 'NÃO ENCONTRADO')}")
         
-        # Construção do dicionário final com validações
+        # Construção do dicionário final (baseado no sistema funcional)
         fatura_data = {
-            "nome_cliente": dados_extraidos["nome_cliente"],
-            "documento_cliente": dados_extraidos["documento_cliente"],
-            "email_cliente": dados_extraidos.get("email_cliente", ""),
-            "numero_instalacao": dados_extraidos["numero_instalacao"],
+            "nome_cliente": dados_extraidos.get("nome_cliente"),
+            "documento_cliente": dados_extraidos.get("documento_cliente"),
+            "email_cliente": dados_extraidos.get("email_cliente"),
+            "numero_instalacao": dados_extraidos.get("numero_instalacao"),
             "valor_total": valor_final,
-            "mes_referencia": dados_extraidos["mes_referencia"],
-            "data_vencimento": dados_extraidos["data_vencimento"],
+            "mes_referencia": dados_extraidos.get("mes_referencia"),
+            "data_vencimento": dados_extraidos.get("data_vencimento"),
         }
         
         # Log dos dados extraídos
@@ -383,18 +155,15 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
         
     except Exception as e:
         print(f"❌ Erro inesperado ao processar o PDF {path_pdf}: {e}")
+        import traceback
+        traceback.print_exc()
         return None
+
 
 def extrair_dados_imagem(path_imagem: str) -> Optional[Dict[str, Any]]:
     """
     Extrai dados básicos de uma imagem de fatura.
     Por enquanto, retorna dados padrão, mas pode ser expandido com OCR.
-    
-    Args:
-        path_imagem: Caminho para o arquivo de imagem
-        
-    Returns:
-        Dicionário com os dados básicos ou None se falhar
     """
     try:
         # Verifica se o arquivo existe
@@ -427,38 +196,13 @@ def extrair_dados_imagem(path_imagem: str) -> Optional[Dict[str, Any]]:
 def validar_dados_fatura(dados: Dict[str, Any]) -> bool:
     """
     Valida se os dados extraídos da fatura estão completos e corretos.
-    
-    Args:
-        dados: Dicionário com os dados da fatura
-        
-    Returns:
-        True se os dados são válidos, False caso contrário
     """
-    if not dados:
-        return False
-    
-    # Campos obrigatórios
-    campos_obrigatorios = [
-        "nome_cliente", "documento_cliente", "numero_instalacao",
-        "valor_total", "mes_referencia", "data_vencimento"
-    ]
+    campos_obrigatorios = ["nome_cliente", "numero_instalacao"]
     
     for campo in campos_obrigatorios:
         if not dados.get(campo):
-            print(f"❌ Campo obrigatório faltando: {campo}")
+            print(f"❌ Campo obrigatório '{campo}' não encontrado")
             return False
     
-    # Validações específicas
-    if dados["valor_total"] <= 0:
-        print("❌ Valor total deve ser maior que zero")
-        return False
-    
-    if len(dados["documento_cliente"]) < 11:
-        print("❌ Documento do cliente deve ter pelo menos 11 caracteres")
-        return False
-    
-    if len(dados["numero_instalacao"]) < 6:
-        print("❌ Número de instalação deve ter pelo menos 6 caracteres")
-        return False
-    
+    print("✅ Dados da fatura validados com sucesso")
     return True

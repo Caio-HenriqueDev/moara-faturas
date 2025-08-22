@@ -216,22 +216,19 @@ def health_check():
 def processar_emails(db_session: Session = Depends(get_db)):
     """
     Processa emails para buscar novas faturas.
+    BASEADO NO SISTEMA FUNCIONAL
     """
     try:
-        print("=" * 80)
-        print("🚀 INICIANDO PROCESSAMENTO DE EMAILS")
-        print("=" * 80)
+        print("🚀 Iniciando processamento de emails...")
         
-        # Valida configurações antes de processar
-        config_issues = settings.validate_config()
-        if config_issues:
-            error_msg = f"Problemas de configuração: {', '.join(config_issues)}"
+        # Valida configurações básicas
+        if not settings.EMAIL_USER or not settings.EMAIL_PASS:
+            error_msg = "Credenciais de email não configuradas"
             print(f"❌ {error_msg}")
             return {
                 "status": "error",
                 "faturas_processadas": 0,
-                "message": error_msg,
-                "config_issues": config_issues
+                "message": error_msg
             }
         
         print(f"🔧 Configurações válidas:")
@@ -239,56 +236,61 @@ def processar_emails(db_session: Session = Depends(get_db)):
         print(f"   - EMAIL_HOST: {settings.EMAIL_HOST}")
         print(f"   - EMAIL_PORT: {settings.EMAIL_PORT}")
         print(f"   - EMAIL_PASS: {'***CONFIGURADO***' if settings.EMAIL_PASS else 'NÃO CONFIGURADO'}")
-        print(f"   - DATABASE_URL: {'***CONFIGURADO***' if settings.DATABASE_URL else 'NÃO CONFIGURADO'}")
-        print("=" * 80)
         
-        # Processa os emails
+        # Processa os emails usando a lógica que funciona
         print("📧 Iniciando processamento de emails...")
-        faturas_processadas = bot_mail.buscar_e_processar_emails()
+        dados_emails = bot_mail.buscar_e_processar_emails()
         
-        print(f"📊 Processamento concluído: {len(faturas_processadas)} faturas encontradas")
+        if not dados_emails:
+            print("ℹ️ Nenhum novo email com fatura encontrado")
+            return {
+                "status": "success",
+                "faturas_processadas": 0,
+                "message": "Nenhum novo email com fatura encontrado"
+            }
         
-        # Salva as faturas no banco
+        print(f"📊 Processamento concluído: {len(dados_emails)} faturas encontradas")
+        
+        # Salva as faturas no banco (lógica que funciona)
         faturas_salvas = 0
-        if faturas_processadas:
-            for fatura_data in faturas_processadas:
-                try:
-                    print(f"💾 Salvando fatura: {fatura_data.get('nome_cliente', 'N/A')}")
+        for fatura_data in dados_emails:
+            try:
+                print(f"💾 Salvando fatura: {fatura_data.get('nome_cliente', 'N/A')}")
+                
+                # Verifica se a fatura já existe
+                fatura_existente = crud.get_fatura_by_instalacao(db_session, fatura_data["numero_instalacao"])
+                
+                if fatura_existente:
+                    # Atualiza fatura existente
+                    for key, value in fatura_data.items():
+                        if hasattr(fatura_existente, key):
+                            setattr(fatura_existente, key, value)
+                    db_session.commit()
+                    print(f"✅ Fatura atualizada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+                    faturas_salvas += 1
+                else:
+                    # Cria nova fatura
+                    nova_fatura = crud.create_fatura(db_session, fatura_data)
+                    db_session.commit()
+                    print(f"✅ Nova fatura criada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+                    faturas_salvas += 1
                     
-                    # Verifica se a fatura já existe
-                    fatura_existente = crud.get_fatura_by_instalacao(db_session, fatura_data["numero_instalacao"])
-                    
-                    if fatura_existente:
-                        # Atualiza fatura existente
-                        for key, value in fatura_data.items():
-                            if hasattr(fatura_existente, key):
-                                setattr(fatura_existente, key, value)
-                        db_session.commit()
-                        print(f"✅ Fatura atualizada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
-                        faturas_salvas += 1
-                    else:
-                        # Cria nova fatura
-                        nova_fatura = crud.create_fatura(db_session, fatura_data)
-                        db_session.commit()
-                        print(f"✅ Nova fatura criada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
-                        faturas_salvas += 1
-                        
-                except Exception as e:
-                    print(f"❌ Erro ao processar fatura {fatura_data.get('numero_instalacao', 'N/A')}: {e}")
-                    db_session.rollback()
-                    continue
+            except Exception as e:
+                print(f"❌ Erro ao processar fatura {fatura_data.get('numero_instalacao', 'N/A')}: {e}")
+                db_session.rollback()
+                continue
         
         print("=" * 80)
         print(f"🎯 PROCESSAMENTO FINALIZADO")
-        print(f"📊 Faturas encontradas: {len(faturas_processadas)}")
+        print(f"📊 Faturas encontradas: {len(dados_emails)}")
         print(f"💾 Faturas salvas: {faturas_salvas}")
         print("=" * 80)
         
         return {
             "status": "success",
-            "faturas_processadas": len(faturas_processadas),
+            "faturas_processadas": len(dados_emails),
             "faturas_salvas": faturas_salvas,
-            "message": f"Processamento concluído: {len(faturas_processadas)} faturas encontradas, {faturas_salvas} salvas"
+            "message": f"Processamento concluído: {len(dados_emails)} faturas encontradas, {faturas_salvas} salvas"
         }
         
     except Exception as e:
