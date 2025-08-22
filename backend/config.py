@@ -28,10 +28,10 @@ class Settings:
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
     
     # Configurações de email
-    EMAIL_USER: Optional[str] = os.getenv("EMAIL_USER")
-    EMAIL_PASS: Optional[str] = os.getenv("EMAIL_PASS")
-    EMAIL_HOST: str = os.getenv("EMAIL_HOST", "imap.gmail.com")
-    EMAIL_PORT: int = int(os.getenv("EMAIL_PORT", "993"))
+    EMAIL_USER: Optional[str] = os.getenv("GMAIL_USER") or os.getenv("EMAIL_USER")
+    EMAIL_PASS: Optional[str] = os.getenv("GMAIL_PASSWORD") or os.getenv("EMAIL_PASS")
+    EMAIL_HOST: str = os.getenv("GMAIL_HOST") or os.getenv("EMAIL_HOST", "imap.gmail.com")
+    EMAIL_PORT: int = int(os.getenv("GMAIL_PORT") or os.getenv("EMAIL_PORT", "993"))
     
     # Configurações do Stripe
     STRIPE_SECRET_KEY: Optional[str] = os.getenv("STRIPE_SECRET_KEY")
@@ -111,6 +111,18 @@ class Settings:
             issues.append("DATABASE_URL não configurado para Vercel")
             
         return issues
+
+    @classmethod
+    def debug_email_config(cls) -> dict:
+        """Retorna configurações de email para debug"""
+        return {
+            "EMAIL_USER": cls.EMAIL_USER,
+            "EMAIL_PASS": "***" if cls.EMAIL_PASS else "NÃO CONFIGURADO",
+            "EMAIL_HOST": cls.EMAIL_HOST,
+            "EMAIL_PORT": cls.EMAIL_PORT,
+            "IS_VERCEL": cls.IS_VERCEL,
+            "ENVIRONMENT": cls.ENVIRONMENT
+        }
 
 # Instância global das configurações
 settings = Settings()

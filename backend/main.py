@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import stripe
 from datetime import datetime
+import os
 
 # Importações locais com fallback para Vercel
 try:
@@ -143,51 +144,67 @@ def health_check():
             services={"error": str(e)}
         )
 
-@app.post("/processar_email/", response_model=ProcessamentoEmailResponse)
-def processar_email(db_session: Session = Depends(get_db)):
+@app.post("/processar_email/")
+def processar_emails(db_session: Session = Depends(get_db)):
     """
-    Busca novos e-mails com anexos PDF, extrai os dados e salva/atualiza no banco.
+    Processa emails para buscar novas faturas.
     """
-    if not db_session:
-        raise HTTPException(status_code=500, detail="Banco de dados não disponível")
-    
     try:
-        print("Iniciando busca e processamento de e-mails...")
-        dados_emails = bot_mail.buscar_e_processar_emails()
-
-        if not dados_emails:
-            return ProcessamentoEmailResponse(
-                message="Nenhum novo email com fatura encontrado.",
-                faturas_processadas=0
-            )
-
-        faturas_processadas = 0
-        for fatura_data in dados_emails:
-            try:
-                fatura_existente = crud.get_fatura_by_instalacao(
-                    db_session, 
-                    fatura_data["numero_instalacao"]
-                )
-                
-                if fatura_existente:
-                    crud.update_fatura(db_session, fatura_existente, fatura_data)
-                    print(f"✅ Fatura atualizada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
-                else:
-                    crud.create_fatura(db_session, fatura_data)
-                    print(f"✅ Nova fatura criada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
-                
-                faturas_processadas += 1
-            except Exception as e:
-                print(f"❌ Erro ao processar fatura {fatura_data.get('numero_instalacao', 'N/A')}: {e}")
-                continue
-
-        return ProcessamentoEmailResponse(
-            message="Processamento de e-mails concluído com sucesso.",
-            faturas_processadas=faturas_processadas
-        )
-
+        print("🚀 Iniciando processamento de emails...")
+        print(f"🔧 Configurações: {settings.debug_email_config()}")
+        
+        # Verifica se as configurações estão corretas
+        if not settings.EMAIL_USER or not settings.EMAIL_PASS:
+            error_msg = "Credenciais de email não configuradas"
+            print(f"❌ {error_msg}")
+            print(f"EMAIL_USER: {'Configurado' if settings.EMAIL_USER else 'NÃO CONFIGURADO'}")
+            print(f"EMAIL_PASS: {'Configurado' if settings.EMAIL_PASS else 'NÃO CONFIGURADO'}")
+            raise HTTPException(status_code=500, detail=error_msg)
+        
+        print("✅ Credenciais verificadas, iniciando processamento...")
+        
+        # Processa os emails
+        faturas_processadas = bot_mail.buscar_e_processar_emails()
+        
+        print(f"📊 Processamento concluído: {len(faturas_processadas)} faturas encontradas")
+        
+        # Salva as faturas no banco
+        if faturas_processadas:
+            for fatura_data in faturas_processadas:
+                try:
+                    print(f"💾 Salvando fatura: {fatura_data.get('nome_cliente', 'N/A')}")
+                    
+                    # Verifica se a fatura já existe
+                    fatura_existente = crud.get_fatura_by_instalacao(db_session, fatura_data["numero_instalacao"])
+                    
+                    if fatura_existente:
+                        # Atualiza fatura existente
+                        for key, value in fatura_data.items():
+                            if hasattr(fatura_existente, key):
+                                setattr(fatura_existente, key, value)
+                        db_session.commit()
+                        print(f"✅ Fatura atualizada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+                    else:
+                        # Cria nova fatura
+                        nova_fatura = crud.create_fatura(db_session, fatura_data)
+                        db_session.commit()
+                        print(f"✅ Nova fatura criada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+                        
+                except Exception as e:
+                    print(f"❌ Erro ao processar fatura {fatura_data.get('numero_instalacao', 'N/A')}: {e}")
+                    db_session.rollback()
+                    continue
+        
+        return {
+            "status": "success",
+            "faturas_processadas": len(faturas_processadas),
+            "message": f"Processamento concluído: {len(faturas_processadas)} faturas processadas"
+        }
+        
     except Exception as e:
         print(f"❌ Erro no processamento: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro no processamento: {str(e)}")
 
 
@@ -343,3 +360,30 @@ async def stripe_webhook(request: Request, db_session: Session = Depends(get_db)
                 print(f"❌ Erro ao atualizar fatura {fatura_id_str}: {e}")
 
     return {"status": "success"}
+
+@app.get("/debug/")
+def debug_config():
+    """
+    Endpoint para debug das configurações e conexões.
+    """
+    try:
+        debug_info = {
+            "config": settings.debug_email_config(),
+            "database": {
+                "url": settings.DATABASE_URL[:20] + "..." if settings.DATABASE_URL else "NÃO CONFIGURADO",
+                "type": "postgresql" if settings.IS_VERCEL else "sqlite"
+            },
+            "environment": {
+                "vercel_env": os.getenv("VERCEL_ENV"),
+                "environment": settings.ENVIRONMENT,
+                "debug": settings.DEBUG
+            }
+        }
+        
+        return debug_info
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "traceback": str(e.__class__.__name__)
+        }
