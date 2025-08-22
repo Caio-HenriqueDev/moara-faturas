@@ -56,7 +56,14 @@ class FaturaManager {
                 btnProcessar.disabled = true;
             }
             
-            showNotification('Processando emails...', 'info');
+            // Mostra notificação de início
+            showNotification('🚀 Iniciando processamento de emails...', 'info');
+            
+            // Cria área de logs se não existir
+            this.criarAreaLogs();
+            
+            // Adiciona log inicial
+            this.adicionarLog('info', 'Iniciando processamento de emails...');
             
             const response = await fetch(CONFIG.API_BASE_URL + CONFIG.ENDPOINTS.PROCESSAR_EMAIL, {
                 method: 'POST',
@@ -68,10 +75,18 @@ class FaturaManager {
             if (response.ok) {
                 const result = await response.json();
                 
-                if (result.faturas_processadas > 0) {
-                    showNotification(`✅ Processamento concluído: ${result.faturas_processadas} faturas processadas`, 'success');
+                // Adiciona log de resultado
+                if (result.status === 'success') {
+                    if (result.faturas_processadas > 0) {
+                        this.adicionarLog('success', `✅ Processamento concluído: ${result.faturas_processadas} faturas encontradas, ${result.faturas_salvas || 0} salvas`);
+                        showNotification(`✅ Processamento concluído: ${result.faturas_processadas} faturas processadas`, 'success');
+                    } else {
+                        this.adicionarLog('info', 'ℹ️ Nenhuma nova fatura encontrada nos emails');
+                        showNotification('ℹ️ Nenhuma nova fatura encontrada nos emails', 'info');
+                    }
                 } else {
-                    showNotification('ℹ️ Nenhuma nova fatura encontrada nos emails', 'info');
+                    this.adicionarLog('error', `❌ Erro no processamento: ${result.message}`);
+                    showNotification(`❌ Erro: ${result.message}`, 'error');
                 }
                 
                 // Recarrega as faturas
@@ -80,6 +95,7 @@ class FaturaManager {
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 const errorMessage = errorData.detail || `Erro HTTP ${response.status}`;
+                this.adicionarLog('error', `❌ Erro HTTP ${response.status}: ${errorMessage}`);
                 throw new Error(errorMessage);
             }
         } catch (error) {
@@ -94,6 +110,7 @@ class FaturaManager {
                 errorMessage = 'Erro de conexão com a API';
             }
             
+            this.adicionarLog('error', `❌ ${errorMessage}`);
             showNotification(errorMessage, 'error');
             return null;
         } finally {
@@ -104,6 +121,49 @@ class FaturaManager {
                 btnProcessar.disabled = false;
             }
         }
+    }
+    
+    // Cria área de logs para mostrar o progresso
+    criarAreaLogs() {
+        let logsArea = document.getElementById('logs-area');
+        if (!logsArea) {
+            logsArea = document.createElement('div');
+            logsArea.id = 'logs-area';
+            logsArea.className = 'logs-area';
+            logsArea.innerHTML = `
+                <div class="logs-header">
+                    <h4><i class="fas fa-terminal"></i> Logs do Processamento</h4>
+                    <button onclick="this.parentElement.parentElement.remove()" class="btn-close">×</button>
+                </div>
+                <div class="logs-content"></div>
+            `;
+            
+            // Insere após o botão de processar emails
+            const btnProcessar = document.querySelector('#btn-processar-emails, #btn-processar-emails-faturas');
+            if (btnProcessar) {
+                btnProcessar.parentNode.insertBefore(logsArea, btnProcessar.nextSibling);
+            }
+        }
+    }
+    
+    // Adiciona um log à área de logs
+    adicionarLog(level, message) {
+        const logsArea = document.getElementById('logs-area');
+        if (!logsArea) return;
+        
+        const logsContent = logsArea.querySelector('.logs-content');
+        const logEntry = document.createElement('div');
+        logEntry.className = `log-entry log-${level}`;
+        
+        const timestamp = new Date().toLocaleTimeString();
+        logEntry.innerHTML = `
+            <span class="log-timestamp">${timestamp}</span>
+            <span class="log-level">${level.toUpperCase()}</span>
+            <span class="log-message">${message}</span>
+        `;
+        
+        logsContent.appendChild(logEntry);
+        logsContent.scrollTop = logsContent.scrollHeight;
     }
     
     // Cria uma nova fatura

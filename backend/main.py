@@ -218,25 +218,38 @@ def processar_emails(db_session: Session = Depends(get_db)):
     Processa emails para buscar novas faturas.
     """
     try:
-        print("🚀 Iniciando processamento de emails...")
-        print(f"🔧 Configurações: {settings.debug_email_config()}")
+        print("=" * 80)
+        print("🚀 INICIANDO PROCESSAMENTO DE EMAILS")
+        print("=" * 80)
         
-        # Verifica se as configurações estão corretas
-        if not settings.EMAIL_USER or not settings.EMAIL_PASS:
-            error_msg = "Credenciais de email não configuradas"
+        # Valida configurações antes de processar
+        config_issues = settings.validate_config()
+        if config_issues:
+            error_msg = f"Problemas de configuração: {', '.join(config_issues)}"
             print(f"❌ {error_msg}")
-            print(f"EMAIL_USER: {'Configurado' if settings.EMAIL_USER else 'NÃO CONFIGURADO'}")
-            print(f"EMAIL_PASS: {'Configurado' if settings.EMAIL_PASS else 'NÃO CONFIGURADO'}")
-            raise HTTPException(status_code=500, detail=error_msg)
+            return {
+                "status": "error",
+                "faturas_processadas": 0,
+                "message": error_msg,
+                "config_issues": config_issues
+            }
         
-        print("✅ Credenciais verificadas, iniciando processamento...")
+        print(f"🔧 Configurações válidas:")
+        print(f"   - EMAIL_USER: {settings.EMAIL_USER}")
+        print(f"   - EMAIL_HOST: {settings.EMAIL_HOST}")
+        print(f"   - EMAIL_PORT: {settings.EMAIL_PORT}")
+        print(f"   - EMAIL_PASS: {'***CONFIGURADO***' if settings.EMAIL_PASS else 'NÃO CONFIGURADO'}")
+        print(f"   - DATABASE_URL: {'***CONFIGURADO***' if settings.DATABASE_URL else 'NÃO CONFIGURADO'}")
+        print("=" * 80)
         
         # Processa os emails
+        print("📧 Iniciando processamento de emails...")
         faturas_processadas = bot_mail.buscar_e_processar_emails()
         
         print(f"📊 Processamento concluído: {len(faturas_processadas)} faturas encontradas")
         
         # Salva as faturas no banco
+        faturas_salvas = 0
         if faturas_processadas:
             for fatura_data in faturas_processadas:
                 try:
@@ -252,28 +265,41 @@ def processar_emails(db_session: Session = Depends(get_db)):
                                 setattr(fatura_existente, key, value)
                         db_session.commit()
                         print(f"✅ Fatura atualizada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+                        faturas_salvas += 1
                     else:
                         # Cria nova fatura
                         nova_fatura = crud.create_fatura(db_session, fatura_data)
                         db_session.commit()
                         print(f"✅ Nova fatura criada: {fatura_data['nome_cliente']} (Instalação: {fatura_data['numero_instalacao']})")
+                        faturas_salvas += 1
                         
                 except Exception as e:
                     print(f"❌ Erro ao processar fatura {fatura_data.get('numero_instalacao', 'N/A')}: {e}")
                     db_session.rollback()
                     continue
         
+        print("=" * 80)
+        print(f"🎯 PROCESSAMENTO FINALIZADO")
+        print(f"📊 Faturas encontradas: {len(faturas_processadas)}")
+        print(f"💾 Faturas salvas: {faturas_salvas}")
+        print("=" * 80)
+        
         return {
             "status": "success",
             "faturas_processadas": len(faturas_processadas),
-            "message": f"Processamento concluído: {len(faturas_processadas)} faturas processadas"
+            "faturas_salvas": faturas_salvas,
+            "message": f"Processamento concluído: {len(faturas_processadas)} faturas encontradas, {faturas_salvas} salvas"
         }
         
     except Exception as e:
         print(f"❌ Erro no processamento: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Erro no processamento: {str(e)}")
+        return {
+            "status": "error",
+            "faturas_processadas": 0,
+            "message": f"Erro no processamento: {str(e)}"
+        }
 
 
 
@@ -445,6 +471,12 @@ def debug_config():
                 "vercel_env": os.getenv("VERCEL_ENV"),
                 "environment": settings.ENVIRONMENT,
                 "debug": settings.DEBUG
+            },
+            "validation": {
+                "issues": settings.validate_config(),
+                "email_configured": bool(settings.EMAIL_USER and settings.EMAIL_PASS),
+                "stripe_configured": bool(settings.STRIPE_SECRET_KEY and settings.STRIPE_PUBLIC_KEY),
+                "database_configured": bool(settings.DATABASE_URL)
             }
         }
         
@@ -454,4 +486,45 @@ def debug_config():
         return {
             "error": str(e),
             "traceback": str(e.__class__.__name__)
+        }
+
+
+@app.get("/logs/")
+def get_logs():
+    """
+    Endpoint para obter logs do sistema.
+    """
+    try:
+        # Simula logs do sistema (em produção, isso viria de um sistema de logging real)
+        logs = [
+            {
+                "timestamp": datetime.now().isoformat(),
+                "level": "info",
+                "message": "Sistema funcionando normalmente",
+                "service": "main"
+            },
+            {
+                "timestamp": datetime.now().isoformat(),
+                "level": "info", 
+                "message": f"Configuração de email: {'OK' if settings.EMAIL_USER and settings.EMAIL_PASS else 'ERRO'}",
+                "service": "email"
+            },
+            {
+                "timestamp": datetime.now().isoformat(),
+                "level": "info",
+                "message": f"Banco de dados: {'OK' if settings.DATABASE_URL else 'ERRO'}",
+                "service": "database"
+            }
+        ]
+        
+        return {
+            "status": "success",
+            "logs": logs,
+            "total": len(logs)
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
         }

@@ -47,14 +47,35 @@ def buscar_regex(padrao: str, texto: str, grupo: int = 1, tipo=str) -> Optional[
         Valor encontrado convertido para o tipo especificado ou None
     """
     try:
-        match = re.search(padrao, texto, re.IGNORECASE)
+        # Tenta buscar o padrão
+        match = re.search(padrao, texto, re.IGNORECASE | re.MULTILINE)
         if match:
             valor = match.group(grupo).strip()
             if valor:
-                return tipo(valor)
+                # Log do padrão encontrado para debug
+                print(f"🔍 Regex encontrado: '{padrao}' → '{valor}'")
+                
+                # Tenta converter para o tipo especificado
+                try:
+                    if tipo == str:
+                        return valor
+                    elif tipo == int:
+                        # Remove caracteres não numéricos
+                        valor_limpo = re.sub(r'[^\d]', '', valor)
+                        return int(valor_limpo) if valor_limpo else None
+                    elif tipo == float:
+                        # Converte vírgula para ponto e remove espaços
+                        valor_limpo = valor.replace(',', '.').replace(' ', '')
+                        return float(valor_limpo) if valor_limpo else None
+                    else:
+                        # Para funções lambda customizadas
+                        return tipo(valor)
+                except (ValueError, TypeError) as e:
+                    print(f"⚠️ Erro ao converter valor '{valor}' para tipo {tipo.__name__}: {e}")
+                    return None
         return None
-    except (ValueError, TypeError) as e:
-        print(f"⚠️ Erro ao converter valor '{valor}' para tipo {tipo.__name__}: {e}")
+    except Exception as e:
+        print(f"⚠️ Erro no regex '{padrao}': {e}")
         return None
 
 def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
@@ -82,7 +103,7 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
     print(f"📋 Primeiros 200 caracteres: {texto_total[:200]}...")
     
     try:
-        # Extração de dados via regex com validações - VERSÃO SUPER FLEXÍVEL
+        # Extração de dados via regex com validações - VERSÃO SUPER FLEXÍVEL E ROBUSTA
         dados_extraidos = {
             "nome_cliente": buscar_regex(
                 r"\n([A-Z][A-Z\s]{4,})\n", 
@@ -98,6 +119,12 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 texto_total
             ) or buscar_regex(
                 r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,4})", 
+                texto_total
+            ) or buscar_regex(
+                r"([A-Z][A-Z\s]{3,})", 
+                texto_total
+            ) or buscar_regex(
+                r"([A-Z][a-z]+(?:\s+[a-z]+){1,3})", 
                 texto_total
             ),
             "mes_referencia": buscar_regex(
@@ -115,6 +142,12 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             ) or buscar_regex(
                 r"(\w+\s+\d{2})", 
                 texto_total
+            ) or buscar_regex(
+                r"(\w+\s+\d{4})", 
+                texto_total
+            ) or buscar_regex(
+                r"(\d{2}/\d{2}/\d{4})", 
+                texto_total
             ),
             "data_vencimento": buscar_regex(
                 r"(\d{2}/\d{2}/\d{4})", 
@@ -130,6 +163,12 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 texto_total
             ) or buscar_regex(
                 r"(\d{2}/\d{2}/\d{2})", 
+                texto_total
+            ) or buscar_regex(
+                r"(\d{2}-\d{2}-\d{2})", 
+                texto_total
+            ) or buscar_regex(
+                r"Vencimento[:\s]*(\d{2}/\d{2}/\d{4})", 
                 texto_total
             ),
             "preco_unitario_com_tributo": buscar_regex(
@@ -148,6 +187,14 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 r"R\$\s*([0-9.,]{4,})", 
                 texto_total,
                 tipo=lambda x: float(x.replace(",", "."))
+            ) or buscar_regex(
+                r"([0-9]{1,3},[0-9]{2})", 
+                texto_total,
+                tipo=lambda x: float(x.replace(",", "."))
+            ) or buscar_regex(
+                r"([0-9]{1,3}\.[0-9]{2})", 
+                texto_total,
+                tipo=lambda x: float(x.replace(".", "").replace(",", "."))
             ) or buscar_regex(
                 r"([0-9]{1,3},[0-9]{2})", 
                 texto_total,
@@ -173,6 +220,14 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 r"(\d{3,4})", 
                 texto_total,
                 tipo=int
+            ) or buscar_regex(
+                r"Consumo[:\s]*(\d+)", 
+                texto_total,
+                tipo=int
+            ) or buscar_regex(
+                r"(\d{3,4})\s*[kK][wW][hH]", 
+                texto_total,
+                tipo=int
             ),
             "numero_instalacao": buscar_regex(
                 r"\b(\d{6,8})\b", 
@@ -189,6 +244,12 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             ) or buscar_regex(
                 r"(\d{5,9})", 
                 texto_total
+            ) or buscar_regex(
+                r"(\d{6,8})\s*[A-Z]", 
+                texto_total
+            ) or buscar_regex(
+                r"(\d{6,8})\s*[a-zA-Z]", 
+                texto_total
             ),
             "saldo_acumulado_gdii": buscar_regex(
                 r"Saldo Acumulado:\s*([\d.,]+)", 
@@ -200,6 +261,10 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 tipo=lambda x: float(x.replace(".", "").replace(",", "."))
             ) or buscar_regex(
                 r"([\d.,]+)\s*R\$", 
+                texto_total,
+                tipo=lambda x: float(x.replace(".", "").replace(",", "."))
+            ) or buscar_regex(
+                r"Saldo[:\s]*([\d.,]+)", 
                 texto_total,
                 tipo=lambda x: float(x.replace(".", "").replace(",", "."))
             ),
@@ -218,8 +283,17 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             ) or buscar_regex(
                 r"([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})", 
                 texto_total
+            ) or buscar_regex(
+                r"([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})", 
+                texto_total
+            ) or buscar_regex(
+                r"([0-9]{11,18})", 
+                texto_total
             ),
             "email_cliente": buscar_regex(
+                r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", 
+                texto_total
+            ) or buscar_regex(
                 r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", 
                 texto_total
             ),

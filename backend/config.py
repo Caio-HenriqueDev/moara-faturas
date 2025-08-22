@@ -28,10 +28,20 @@ class Settings:
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
     
     # Configurações de email
-    EMAIL_USER: Optional[str] = os.getenv("EMAIL_USER") or os.getenv("GMAIL_USER")
-    EMAIL_PASS: Optional[str] = os.getenv("EMAIL_PASS") or os.getenv("GMAIL_PASSWORD")
-    EMAIL_HOST: str = os.getenv("EMAIL_HOST") or os.getenv("GMAIL_HOST", "imap.gmail.com")
-    EMAIL_PORT: int = int(os.getenv("EMAIL_PORT") or os.getenv("GMAIL_PORT", "993"))
+    EMAIL_USER: Optional[str] = os.getenv("EMAIL_USER")
+    EMAIL_PASS: Optional[str] = os.getenv("EMAIL_PASS")
+    EMAIL_HOST: str = os.getenv("EMAIL_HOST", "imap.gmail.com")
+    EMAIL_PORT: int = int(os.getenv("EMAIL_PORT", "993"))
+    
+    # Fallback para compatibilidade com variáveis antigas
+    if not EMAIL_USER:
+        EMAIL_USER = os.getenv("GMAIL_USER")
+    if not EMAIL_PASS:
+        EMAIL_PASS = os.getenv("GMAIL_PASSWORD")
+    if not EMAIL_HOST or EMAIL_HOST == "imap.gmail.com":
+        EMAIL_HOST = os.getenv("GMAIL_HOST", "imap.gmail.com")
+    if EMAIL_PORT == 993:
+        EMAIL_PORT = int(os.getenv("GMAIL_PORT", "993"))
     
     # Configurações do Stripe
     STRIPE_SECRET_KEY: Optional[str] = os.getenv("STRIPE_SECRET_KEY")
@@ -99,16 +109,34 @@ class Settings:
         """Valida as configurações e retorna lista de problemas"""
         issues = []
         
+        # Validação de email
         if not cls.EMAIL_USER:
             issues.append("EMAIL_USER não configurado")
+        elif "@" not in cls.EMAIL_USER:
+            issues.append("EMAIL_USER deve ser um email válido")
+            
         if not cls.EMAIL_PASS:
             issues.append("EMAIL_PASS não configurado")
+        elif len(cls.EMAIL_PASS) < 8:
+            issues.append("EMAIL_PASS deve ter pelo menos 8 caracteres")
+            
+        if not cls.EMAIL_HOST:
+            issues.append("EMAIL_HOST não configurado")
+            
+        if cls.EMAIL_PORT not in [993, 587, 465]:
+            issues.append("EMAIL_PORT deve ser 993 (IMAP SSL), 587 (SMTP) ou 465 (SMTP SSL)")
+        
+        # Validação de Stripe
         if not cls.STRIPE_SECRET_KEY:
             issues.append("STRIPE_SECRET_KEY não configurado")
         if not cls.STRIPE_PUBLIC_KEY:
             issues.append("STRIPE_PUBLIC_KEY não configurado")
+            
+        # Validação de banco de dados
         if cls.IS_VERCEL and not cls.DATABASE_URL:
             issues.append("DATABASE_URL não configurado para Vercel")
+        elif cls.IS_HOSTINGER and not cls.DATABASE_URL:
+            issues.append("DATABASE_URL não configurado para Hostinger")
             
         return issues
 
