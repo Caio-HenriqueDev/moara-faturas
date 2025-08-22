@@ -27,13 +27,13 @@ const CONFIG = {
             icon: '🏠'
         },
         vercel: {
-            name: 'Vercel',
-            apiUrl: 'https://moara.vercel.app',
+            name: 'Vercel Atual',
+            apiUrl: 'https://moara-solar-l7whuoy74-diretoriamoovestudio-5505s-projects.vercel.app',
             icon: '☁️'
         },
         vercel2: {
-            name: 'Vercel 2',
-            apiUrl: 'https://moaraenergiasolar.vercel.app',
+            name: 'Vercel Backup',
+            apiUrl: 'https://moara-solar-48c8u9u4c-diretoriamoovestudio-5505s-projects.vercel.app',
             icon: '☁️'
         }
     }
@@ -177,6 +177,38 @@ class ConfigManager {
 
 // Instância global do gerenciador de configuração
 const configManager = new ConfigManager();
+
+// Cria variáveis globais para compatibilidade com código existente
+const CONFIG = {
+    API_BASE_URL: configManager.apiBaseUrl,
+    ENDPOINTS: configManager.endpoints
+};
+
+// Atualiza as variáveis globais quando o ambiente muda
+document.addEventListener('environmentChanged', (event) => {
+    CONFIG.API_BASE_URL = event.detail.apiUrl;
+    CONFIG.ENDPOINTS = configManager.buildEndpoints();
+    console.log('🌍 Configuração atualizada:', CONFIG);
+});
+
+// Inicializa o seletor de ambiente
+document.addEventListener('DOMContentLoaded', () => {
+    configManager.updateEnvironmentSelector();
+    
+    // Adiciona listener para mudança de ambiente
+    const envSelector = document.getElementById('env-selector');
+    if (envSelector) {
+        envSelector.addEventListener('change', (e) => {
+            configManager.switchEnvironment(e.target.value);
+        });
+    }
+    
+    console.log('🚀 Configuração inicializada:', CONFIG);
+});
+
+// Exporta para uso em outros módulos
+window.CONFIG = CONFIG;
+window.configManager = configManager;
 
 // Funções de conveniência para compatibilidade
 function getApiUrl(endpoint) {
