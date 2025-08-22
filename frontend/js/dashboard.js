@@ -240,9 +240,16 @@ class DashboardManager {
         const btnAtualizar = document.getElementById('btn-atualizar-dashboard');
         if (btnAtualizar) {
             btnAtualizar.addEventListener('click', async () => {
-                await this.carregarEstatisticas();
-                this.renderizarDashboard();
+                await this.atualizarDashboard();
                 showNotification('Dashboard atualizado', 'success');
+            });
+        }
+        
+        // Botão de testar Gmail
+        const btnTestarGmail = document.getElementById('btn-testar-gmail');
+        if (btnTestarGmail) {
+            btnTestarGmail.addEventListener('click', async () => {
+                await this.testarGmail();
             });
         }
     }
@@ -251,6 +258,47 @@ class DashboardManager {
     async atualizarDashboard() {
         await this.carregarEstatisticas();
         this.renderizarDashboard();
+    }
+    
+    // Testa conexão com Gmail
+    async testarGmail() {
+        try {
+            const btnTestar = document.getElementById('btn-testar-gmail');
+            if (btnTestar) {
+                btnTestar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testando...';
+                btnTestar.disabled = true;
+            }
+            
+            showNotification('Testando conexão com Gmail...', 'info');
+            
+            const response = await fetch(CONFIG.API_BASE_URL + CONFIG.ENDPOINTS.TESTAR_GMAIL);
+            
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showNotification(`✅ Gmail funcionando! ${result.details.email_count} emails encontrados`, 'success');
+                    console.log('✅ Teste Gmail:', result);
+                } else if (result.status === 'warning') {
+                    showNotification(`⚠️ Gmail conectado mas com avisos: ${result.message}`, 'warning');
+                    console.log('⚠️ Teste Gmail:', result);
+                } else {
+                    showNotification(`❌ Erro no Gmail: ${result.message}`, 'error');
+                    console.log('❌ Teste Gmail:', result);
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error('❌ Erro ao testar Gmail:', error);
+            showNotification('Erro ao testar Gmail', 'error');
+        } finally {
+            const btnTestar = document.getElementById('btn-testar-gmail');
+            if (btnTestar) {
+                btnTestar.innerHTML = '<i class="fas fa-vial"></i> Testar Gmail';
+                btnTestar.disabled = false;
+            }
+        }
     }
 }
 

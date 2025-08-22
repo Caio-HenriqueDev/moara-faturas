@@ -25,17 +25,53 @@ def conectar_email() -> Optional[imaplib.IMAP4_SSL]:
         Conexão IMAP ou None se falhar
     """
     try:
+        print(f"🔌 Tentando conectar ao Gmail...")
+        print(f"📧 Usuário: {settings.EMAIL_USER}")
+        print(f"🌐 Host: {settings.EMAIL_HOST}")
+        print(f"🔌 Porta: {settings.EMAIL_PORT}")
+        
         if not settings.EMAIL_USER or not settings.EMAIL_PASS:
             print("❌ Credenciais de email não configuradas")
+            print(f"EMAIL_USER: {'Configurado' if settings.EMAIL_USER else 'NÃO CONFIGURADO'}")
+            print(f"EMAIL_PASS: {'Configurado' if settings.EMAIL_PASS else 'NÃO CONFIGURADO'}")
             return None
-            
+        
+        print("🔐 Credenciais verificadas, tentando conexão IMAP...")
+        
+        # Tenta conexão IMAP
         mail = imaplib.IMAP4_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT)
+        print("✅ Conexão IMAP estabelecida")
+        
+        # Tenta login
+        print("🔑 Tentando login...")
         mail.login(settings.EMAIL_USER, settings.EMAIL_PASS)
+        print("✅ Login realizado com sucesso")
+        
+        # Seleciona caixa de entrada
+        print("📁 Selecionando caixa de entrada...")
         mail.select("inbox")
-        print(f"✅ Conectado ao email: {settings.EMAIL_USER}")
+        print("✅ Caixa de entrada selecionada")
+        
+        print(f"🎉 Conectado ao email: {settings.EMAIL_USER}")
         return mail
+        
+    except imaplib.IMAP4.error as e:
+        print(f"❌ Erro de autenticação IMAP: {e}")
+        print("💡 Verifique se:")
+        print("   - A senha de app está correta")
+        print("   - A verificação em duas etapas está ativada")
+        print("   - A senha de app foi gerada corretamente")
+        return None
+        
+    except ConnectionRefusedError:
+        print("❌ Conexão recusada pelo servidor")
+        print("💡 Verifique se a porta 993 está correta")
+        return None
+        
     except Exception as e:
-        print(f"❌ Erro ao conectar ao e-mail: {e}")
+        print(f"❌ Erro inesperado ao conectar ao e-mail: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def gerar_hash(conteudo_bytes: bytes) -> str:
@@ -135,33 +171,57 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
     faturas_processadas = []
     
     try:
+        print("🔌 Iniciando conexão com Gmail...")
+        
         # Conecta ao email
         mail = conectar_email()
         if not mail:
+            print("❌ Falha na conexão com Gmail")
             return faturas_processadas
         
-        # Busca emails não lidos
-        status, messages = mail.search(None, "UNSEEN")
+        print("✅ Conectado ao Gmail com sucesso!")
+        
+        # Busca TODOS os emails (não apenas não lidos)
+        print("🔍 Buscando emails na caixa de entrada...")
+        status, messages = mail.search(None, "ALL")
+        
         if status != "OK":
-            print("❌ Erro ao buscar emails")
+            print(f"❌ Erro ao buscar emails: {status}")
             return faturas_processadas
         
         email_ids = messages[0].split()
-        print(f"📧 Encontrados {len(email_ids)} emails não lidos")
+        print(f"📧 Encontrados {len(email_ids)} emails na caixa de entrada")
         
-        for email_id in email_ids:
+        # Processa apenas os últimos 50 emails para evitar sobrecarga
+        emails_para_processar = email_ids[-50:] if len(email_ids) > 50 else email_ids
+        print(f"📋 Processando os últimos {len(emails_para_processar)} emails")
+        
+        for email_id in emails_para_processar:
             try:
+                print(f"📬 Processando email ID: {email_id}")
+                
                 # Busca o email específico
                 status, msg_data = mail.fetch(email_id, "(RFC822)")
                 if status != "OK":
+                    print(f"⚠️ Erro ao buscar email {email_id}: {status}")
                     continue
                 
                 # Parse do email
                 raw_email = msg_data[0][1]
                 msg = email.message_from_bytes(raw_email)
                 
+                # Obtém informações do email
+                subject = decode_header(msg["subject"])[0][0] if msg["subject"] else "Sem assunto"
+                if isinstance(subject, bytes):
+                    subject = subject.decode("utf-8", errors="ignore")
+                
+                from_addr = msg["from"] or "Remetente desconhecido"
+                print(f"📧 Assunto: {subject}")
+                print(f"👤 De: {from_addr}")
+                
                 # Verifica se tem anexos
                 if msg.is_multipart():
+                    print(f"📎 Email é multipart, verificando anexos...")
                     for part in msg.walk():
                         if part.get_content_maintype() == "multipart":
                             continue
@@ -176,27 +236,36 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
                             # Processa o anexo
                             dados_fatura = processar_anexo_pdf(part, filename)
                             if dados_fatura:
+                                print(f"✅ Fatura extraída: {dados_fatura.get('nome_cliente', 'N/A')}")
                                 faturas_processadas.append(dados_fatura)
+                            else:
+                                print(f"⚠️ Falha ao extrair dados da fatura: {filename}")
+                        else:
+                            print(f"ℹ️ Anexo ignorado (não é PDF): {filename}")
+                else:
+                    print(f"ℹ️ Email não tem anexos")
                 
-                # Marca como lido
-                mail.store(email_id, "+FLAGS", "\\Seen")
+                print(f"✅ Email {email_id} processado com sucesso")
                 
             except Exception as e:
                 print(f"❌ Erro ao processar email {email_id}: {e}")
                 continue
         
-        print(f"✅ Processamento concluído: {len(faturas_processadas)} faturas extraídas")
+        print(f"🎉 Processamento concluído: {len(faturas_processadas)} faturas extraídas")
         
     except Exception as e:
         print(f"❌ Erro geral no processamento de emails: {e}")
+        import traceback
+        traceback.print_exc()
     
     finally:
         try:
             if 'mail' in locals():
                 mail.close()
                 mail.logout()
-        except:
-            pass
+                print("🔌 Conexão com Gmail fechada")
+        except Exception as e:
+            print(f"⚠️ Erro ao fechar conexão: {e}")
     
     return faturas_processadas
 

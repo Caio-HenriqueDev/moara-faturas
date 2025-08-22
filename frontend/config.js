@@ -64,6 +64,7 @@ class ConfigManager {
             HEALTH: '/health',
             FATURAS: '/faturas/',
             PROCESSAR_EMAIL: '/processar_email/',
+            TESTAR_GMAIL: '/testar_gmail/',
             CHECKOUT: '/create-checkout-session',
             WEBHOOK: '/stripe-webhook/',
             DOCS: '/docs'

@@ -190,6 +190,68 @@ def processar_email(db_session: Session = Depends(get_db)):
         print(f"❌ Erro no processamento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro no processamento: {str(e)}")
 
+@app.get("/testar_gmail/")
+def testar_gmail():
+    """
+    Testa a conexão com o Gmail para debug.
+    """
+    try:
+        print("🧪 Testando conexão com Gmail...")
+        
+        # Testa conexão
+        mail = bot_mail.conectar_email()
+        if not mail:
+            return {
+                "status": "error",
+                "message": "Falha na conexão com Gmail",
+                "details": "Verifique as credenciais e configurações"
+            }
+        
+        # Testa busca de emails
+        try:
+            status, messages = mail.search(None, "ALL")
+            if status == "OK":
+                email_count = len(messages[0].split()) if messages[0] else 0
+                result = {
+                    "status": "success",
+                    "message": "Conexão com Gmail estabelecida com sucesso",
+                    "details": {
+                        "email_count": email_count,
+                        "connection": "IMAP SSL",
+                        "host": settings.EMAIL_HOST,
+                        "port": settings.EMAIL_PORT,
+                        "user": settings.EMAIL_USER
+                    }
+                }
+            else:
+                result = {
+                    "status": "warning",
+                    "message": "Conectado mas erro ao buscar emails",
+                    "details": f"Status: {status}"
+                }
+        except Exception as e:
+            result = {
+                "status": "warning",
+                "message": "Conectado mas erro ao buscar emails",
+                "details": str(e)
+            }
+        finally:
+            try:
+                mail.close()
+                mail.logout()
+            except:
+                pass
+        
+        return result
+        
+    except Exception as e:
+        print(f"❌ Erro no teste do Gmail: {e}")
+        return {
+            "status": "error",
+            "message": "Erro ao testar Gmail",
+            "details": str(e)
+        }
+
 @app.get("/faturas/", response_model=List[FaturaSchema])
 def listar_faturas(
     skip: int = 0, 
