@@ -143,8 +143,8 @@ function getPageTitle(section) {
         'dashboard': 'Dashboard',
         'clientes': 'Gestão de Clientes',
         'faturas': 'Gestão de Faturas',
-        'pagamentos': 'Pagamentos',
-        'relatorios': 'Relatórios'
+        'pagamentos': 'Gestão de Pagamentos',
+        'relatorios': 'Relatórios e Análises'
     };
     return titles[section] || 'Dashboard';
 }
