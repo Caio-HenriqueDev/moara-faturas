@@ -21,11 +21,6 @@
     "VERCEL_ENV": "production"
   },
   "regions": ["gru1"],
-  "functions": {
-    "backend/main.py": {
-      "maxDuration": 30
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
