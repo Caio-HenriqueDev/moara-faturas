@@ -86,6 +86,36 @@ def gerar_hash(conteudo_bytes: bytes) -> str:
     """
     return md5(conteudo_bytes).hexdigest()
 
+def salvar_arquivo(conteudo: bytes, hash_arquivo: str, extensao: str = "pdf") -> Optional[str]:
+    """
+    Salva o arquivo no diretório de armazenamento.
+    
+    Args:
+        conteudo: Conteúdo do arquivo em bytes
+        hash_arquivo: Hash MD5 do arquivo
+        extensao: Extensão do arquivo (pdf, png, jpg, etc.)
+        
+    Returns:
+        Caminho do arquivo salvo ou None se falhar
+    """
+    try:
+        # Cria diretório se não existir
+        os.makedirs(settings.PDF_STORAGE_PATH, exist_ok=True)
+        
+        # Caminho completo do arquivo
+        path_arquivo = os.path.join(settings.PDF_STORAGE_PATH, f"{hash_arquivo}.{extensao}")
+        
+        # Salva o arquivo
+        with open(path_arquivo, "wb") as f:
+            f.write(conteudo)
+        
+        print(f"✅ Arquivo salvo: {path_arquivo}")
+        return path_arquivo
+    except Exception as e:
+        print(f"❌ Erro ao salvar arquivo: {e}")
+        return None
+
+
 def salvar_pdf(conteudo: bytes, hash_pdf: str) -> Optional[str]:
     """
     Salva o PDF no diretório de armazenamento.
@@ -97,22 +127,7 @@ def salvar_pdf(conteudo: bytes, hash_pdf: str) -> Optional[str]:
     Returns:
         Caminho do arquivo salvo ou None se falhar
     """
-    try:
-        # Cria diretório se não existir
-        os.makedirs(settings.PDF_STORAGE_PATH, exist_ok=True)
-        
-        # Caminho completo do arquivo
-        path_pdf = os.path.join(settings.PDF_STORAGE_PATH, f"{hash_pdf}.pdf")
-        
-        # Salva o arquivo
-        with open(path_pdf, "wb") as f:
-            f.write(conteudo)
-        
-        print(f"✅ PDF salvo: {path_pdf}")
-        return path_pdf
-    except Exception as e:
-        print(f"❌ Erro ao salvar PDF: {e}")
-        return None
+    return salvar_arquivo(conteudo, hash_pdf, "pdf")
 
 def processar_anexo_pdf(part: Message, nome_anexo: str) -> Optional[Dict[str, Any]]:
     """
@@ -159,6 +174,57 @@ def processar_anexo_pdf(part: Message, nome_anexo: str) -> Optional[Dict[str, An
             
     except Exception as e:
         print(f"❌ Erro ao processar anexo PDF: {e}")
+        return None
+
+def processar_anexo_imagem(part: Message, nome_anexo: str) -> Optional[Dict[str, Any]]:
+    """
+    Processa um anexo de imagem (PNG, JPG, JPEG) individual.
+    
+    Args:
+        part: Parte do email contendo o anexo
+        nome_anexo: Nome do arquivo anexo
+        
+    Returns:
+        Dados extraídos da fatura ou None se falhar
+    """
+    try:
+        # Decodifica o nome do arquivo
+        nome, charset = decode_header(nome_anexo)[0]
+        if isinstance(nome, bytes):
+            nome = nome.decode(charset or "utf-8")
+
+        # Obtém o conteúdo da imagem
+        conteudo = part.get_payload(decode=True)
+        if not conteudo:
+            print(f"⚠️ Anexo vazio: {nome}")
+            return None
+
+        # Gera hash para verificar se é inédito
+        hash_imagem = gerar_hash(conteudo)
+        
+        # Salva a imagem
+        path_imagem = salvar_arquivo(conteudo, hash_imagem, nome_anexo.split('.')[-1]) # Salva com a extensão original
+        if not path_imagem:
+            return None
+
+        # Extrai dados da fatura (assumindo que a imagem contém a fatura)
+        # Para imagens, a lógica de extração de dados pode ser diferente
+        # Por exemplo, pode ser necessário usar uma biblioteca de OCR
+        # ou simplesmente retornar os dados da imagem
+        
+        # Usa a função de extração de dados de imagem
+        from .pdf_parser import extrair_dados_imagem
+        dados_fatura = extrair_dados_imagem(path_imagem)
+        
+        if dados_fatura:
+            dados_fatura["url_pdf"] = path_imagem # Salva a URL da imagem como URL do PDF
+            return dados_fatura
+        else:
+            print(f"⚠️ Falha ao extrair dados da imagem: {nome}")
+            return None
+        
+    except Exception as e:
+        print(f"❌ Erro ao processar anexo de imagem: {e}")
         return None
 
 def buscar_e_processar_emails() -> List[Dict[str, Any]]:
@@ -228,20 +294,37 @@ def buscar_e_processar_emails() -> List[Dict[str, Any]]:
                         if part.get("Content-Disposition") is None:
                             continue
                         
-                        # Verifica se é PDF
+                        # Verifica se é PDF ou PNG
                         filename = part.get_filename()
-                        if filename and filename.lower().endswith(".pdf"):
-                            print(f"📎 Processando anexo PDF: {filename}")
+                        if filename:
+                            filename_lower = filename.lower()
+                            print(f"📎 Anexo encontrado: {filename} (tipo: {part.get_content_type()})")
                             
-                            # Processa o anexo
-                            dados_fatura = processar_anexo_pdf(part, filename)
-                            if dados_fatura:
-                                print(f"✅ Fatura extraída: {dados_fatura.get('nome_cliente', 'N/A')}")
-                                faturas_processadas.append(dados_fatura)
+                            if filename_lower.endswith(".pdf"):
+                                print(f"📎 Processando anexo PDF: {filename}")
+                                
+                                # Processa o anexo PDF
+                                dados_fatura = processar_anexo_pdf(part, filename)
+                                if dados_fatura:
+                                    print(f"✅ Fatura extraída: {dados_fatura.get('nome_cliente', 'N/A')}")
+                                    faturas_processadas.append(dados_fatura)
+                                else:
+                                    print(f"⚠️ Falha ao extrair dados da fatura: {filename}")
+                                    
+                            elif filename_lower.endswith((".png", ".jpg", ".jpeg")):
+                                print(f"📎 Processando anexo de imagem: {filename}")
+                                
+                                # Processa o anexo de imagem
+                                dados_fatura = processar_anexo_imagem(part, filename)
+                                if dados_fatura:
+                                    print(f"✅ Fatura extraída da imagem: {dados_fatura.get('nome_cliente', 'N/A')}")
+                                    faturas_processadas.append(dados_fatura)
+                                else:
+                                    print(f"⚠️ Falha ao extrair dados da imagem: {filename}")
                             else:
-                                print(f"⚠️ Falha ao extrair dados da fatura: {filename}")
+                                print(f"ℹ️ Anexo ignorado (formato não suportado): {filename}")
                         else:
-                            print(f"ℹ️ Anexo ignorado (não é PDF): {filename}")
+                            print(f"ℹ️ Anexo sem nome ignorado")
                 else:
                     print(f"ℹ️ Email não tem anexos")
                 

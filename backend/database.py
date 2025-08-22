@@ -58,8 +58,8 @@ def create_database_engine():
         # SQLite (desenvolvimento local)
         engine = create_engine(
             database_url,
-            echo=settings.DEBUG,
-            **config.get("connect_args", {})
+            echo=settings.DEBUG
+            # SQLite não suporta connect_args complexos
         )
     
     return engine

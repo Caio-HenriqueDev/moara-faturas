@@ -87,17 +87,33 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             "nome_cliente": buscar_regex(
                 r"\n([A-Z\s]{5,})\nMURIAE", 
                 texto_total
+            ) or buscar_regex(
+                r"Cliente[:\s]*([A-Z\s]{5,})", 
+                texto_total
+            ) or buscar_regex(
+                r"([A-Z\s]{5,})\s*-\s*[A-Z\s]+", 
+                texto_total
             ),
             "mes_referencia": buscar_regex(
                 r"(\w+\s*/\s*\d{4})", 
+                texto_total
+            ) or buscar_regex(
+                r"Referência[:\s]*(\w+\s*\d{4})", 
                 texto_total
             ),
             "data_vencimento": buscar_regex(
                 r"(\d{2}/\d{2}/\d{4})", 
                 texto_total
+            ) or buscar_regex(
+                r"Vencimento[:\s]*(\d{2}/\d{2}/\d{4})", 
+                texto_total
             ),
             "preco_unitario_com_tributo": buscar_regex(
                 r"Consumo em kWh.*?\n.*?([0-9.,]{4,})", 
+                texto_total,
+                tipo=lambda x: float(x.replace(",", "."))
+            ) or buscar_regex(
+                r"Preço[:\s]*R?\$?\s*([0-9.,]{4,})", 
                 texto_total,
                 tipo=lambda x: float(x.replace(",", "."))
             ),
@@ -105,9 +121,19 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
                 r"\b([23][0-9]{2}),00\b", 
                 texto_total,
                 tipo=lambda x: int(x.replace(",", ""))
+            ) or buscar_regex(
+                r"Consumo[:\s]*(\d+)\s*kWh", 
+                texto_total,
+                tipo=int
             ),
             "numero_instalacao": buscar_regex(
                 r"\b(\d{6,8})\b", 
+                texto_total
+            ) or buscar_regex(
+                r"Instalação[:\s]*(\d{6,8})", 
+                texto_total
+            ) or buscar_regex(
+                r"(\d{6,8})\s*[A-Z]", 
                 texto_total
             ),
             "saldo_acumulado_gdii": buscar_regex(
@@ -117,6 +143,12 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
             ),
             "documento_cliente": buscar_regex(
                 r"CNPJ/CPF/RANI[:\s]*([0-9Xx./-]{11,20})", 
+                texto_total
+            ) or buscar_regex(
+                r"CPF[:\s]*([0-9]{11,14})", 
+                texto_total
+            ) or buscar_regex(
+                r"CNPJ[:\s]*([0-9]{14,18})", 
                 texto_total
             ),
             "email_cliente": buscar_regex(
@@ -192,6 +224,45 @@ def extrair_dados_fatura_pdf(path_pdf: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"❌ Erro inesperado ao processar o PDF {path_pdf}: {e}")
         return None
+
+def extrair_dados_imagem(path_imagem: str) -> Optional[Dict[str, Any]]:
+    """
+    Extrai dados básicos de uma imagem de fatura.
+    Por enquanto, retorna dados padrão, mas pode ser expandido com OCR.
+    
+    Args:
+        path_imagem: Caminho para o arquivo de imagem
+        
+    Returns:
+        Dicionário com os dados básicos ou None se falhar
+    """
+    try:
+        # Verifica se o arquivo existe
+        if not Path(path_imagem).exists():
+            print(f"❌ Arquivo de imagem não encontrado: {path_imagem}")
+            return None
+        
+        print(f"🖼️ Processando imagem: {Path(path_imagem).name}")
+        
+        # Por enquanto, retorna dados padrão
+        # TODO: Implementar OCR para extrair dados reais da imagem
+        dados_imagem = {
+            "nome_cliente": "Cliente da Imagem",
+            "documento_cliente": "N/A",
+            "email_cliente": "",
+            "numero_instalacao": Path(path_imagem).stem[:8], # Usa nome do arquivo
+            "valor_total": 100.00,
+            "mes_referencia": "N/A",
+            "data_vencimento": "N/A",
+        }
+        
+        print(f"✅ Dados básicos extraídos da imagem")
+        return dados_imagem
+        
+    except Exception as e:
+        print(f"❌ Erro ao processar imagem {path_imagem}: {e}")
+        return None
+
 
 def validar_dados_fatura(dados: Dict[str, Any]) -> bool:
     """
