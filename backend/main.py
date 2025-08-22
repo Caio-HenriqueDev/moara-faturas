@@ -90,24 +90,29 @@ async def shutdown_event():
 
 # Endpoints da API
 
-@app.get("/", response_model=dict)
-def read_root():
+@app.get("/")
+def root():
     """
-    Endpoint raiz para verificar se o backend está funcionando.
+    Endpoint raiz para teste básico.
     """
     return {
-        "message": settings.APP_NAME,
+        "message": "Sistema de Gestão de Faturas - Moara Energia",
         "status": "online",
-        "version": settings.APP_VERSION,
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/test/")
+def test_endpoint():
+    """
+    Endpoint de teste simples.
+    """
+    return {
+        "status": "success",
+        "message": "API funcionando corretamente",
         "environment": settings.ENVIRONMENT,
-        "endpoints": {
-            "docs": "/docs",
-            "health": "/health",
-            "faturas": "/faturas/",
-            "processar_email": "/processar_email/",
-            "checkout": "/create-checkout-session/{fatura_id}",
-            "webhook": "/stripe-webhook/"
-        }
+        "is_vercel": settings.IS_VERCEL
     }
 
 @app.get("/health", response_model=HealthCheckResponse)
